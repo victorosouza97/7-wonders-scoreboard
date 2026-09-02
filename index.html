@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Placar das 7 Maravilhas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' font-size='80'%3E%3Ctext y='.9em'%3E%F0%9F%8F%9B%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#EAE6DA;
+    --surface:#FBF9F3;
+    --surface-2:#F1ECDF;
+    --surface-3:#E4DFCF;
+    --ink:#2A2621;
+    --ink-dim:#746B5C;
+    --ink-faint:#9A9182;
+    --line:rgba(42,38,33,.14);
+    --line-strong:rgba(42,38,33,.28);
+    --accent:#8E6526;
+    --accent-ink:#FFFFFF;
+    --accent-soft:rgba(142,101,38,.14);
+
+    --cat-military:#A0342C;
+    --cat-treasury:#96692A;
+    --cat-civil:#2F4E78;
+    --cat-commerce:#A85A1E;
+    --cat-science:#3F7A5E;
+    --cat-guild:#6C4179;
+    --cat-wonder:#6E6858;
+
+    --good:#3F7D4F;
+    --bad:#B23A34;
+
+    --shadow:0 1px 2px rgba(30,26,20,.06), 0 6px 20px -8px rgba(30,26,20,.18);
+    --radius:14px;
+    --radius-sm:9px;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#1E1A15;
+      --surface:#28231C;
+      --surface-2:#332C22;
+      --surface-3:#3D3527;
+      --ink:#EFE8D8;
+      --ink-dim:#B7AC97;
+      --ink-faint:#8B806D;
+      --line:rgba(239,232,216,.12);
+      --line-strong:rgba(239,232,216,.24);
+      --accent:#D9A855;
+      --accent-ink:#241B08;
+      --accent-soft:rgba(217,168,85,.16);
+
+      --cat-military:#DD6A5D;
+      --cat-treasury:#D9A855;
+      --cat-civil:#7FA1D1;
+      --cat-commerce:#E0904F;
+      --cat-science:#79C09A;
+      --cat-guild:#B58BC6;
+      --cat-wonder:#B3AB95;
+
+      --good:#6FBE81;
+      --bad:#E2695F;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#1E1A15;
+    --surface:#28231C;
+    --surface-2:#332C22;
+    --surface-3:#3D3527;
+    --ink:#EFE8D8;
+    --ink-dim:#B7AC97;
+    --ink-faint:#8B806D;
+    --line:rgba(239,232,216,.12);
+    --line-strong:rgba(239,232,216,.24);
+    --accent:#D9A855;
+    --accent-ink:#241B08;
+    --accent-soft:rgba(217,168,85,.16);
+
+    --cat-military:#DD6A5D;
+    --cat-treasury:#D9A855;
+    --cat-civil:#7FA1D1;
+    --cat-commerce:#E0904F;
+    --cat-science:#79C09A;
+    --cat-guild:#B58BC6;
+    --cat-wonder:#B3AB95;
+
+    --good:#6FBE81;
+    --bad:#E2695F;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  html{background:var(--ground);}
+  body{
+    margin:0;
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%;}
+  h1,h2,h3,.display{
+    font-family:"Cinzel", "Cambria", serif;
+    text-wrap:balance;
+    letter-spacing:.01em;
+    font-weight:600;
+  }
+  .mono, .num{
+    font-family:"IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  button{font-family:inherit;}
+
+  .app{
+    max-width:760px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--ground);
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    padding:22px 20px 16px;
+    border-bottom:1px solid var(--line);
+    background:
+      linear-gradient(var(--ground),var(--ground));
+    position:relative;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .topbar::after{
+    content:"";
+    position:absolute; left:20px; right:20px; bottom:8px; height:1px;
+    background:repeating-linear-gradient(90deg, var(--line-strong) 0 6px, transparent 6px 11px);
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .glyph{font-size:20px; line-height:1;}
+  .brand h1{font-size:1.5rem; margin:0; color:var(--ink);}
+  .brand .sub{font-size:.78rem; color:var(--ink-dim); margin-top:2px; letter-spacing:.04em; text-transform:uppercase;}
+
+  .sync-badge{
+    font-size:.7rem; font-weight:600; letter-spacing:.02em; white-space:nowrap;
+    padding:5px 10px; border-radius:999px; background:var(--surface-2); color:var(--ink-faint);
+    flex-shrink:0; cursor:default;
+  }
+  .sync-badge.sync-on{background:var(--accent-soft); color:var(--accent);}
+  .sync-badge.sync-off{background:rgba(178,58,52,.14); color:var(--bad);}
+  .sync-badge.sync-pending{background:var(--surface-2); color:var(--ink-faint);}
+
+  .tabs{
+    display:flex; gap:2px;
+    padding:10px 14px 0;
+    border-bottom:1px solid var(--line);
+    background:var(--ground);
+    position:sticky; top:0; z-index:5;
+  }
+  .tab-btn{
+    flex:1;
+    background:none; border:none;
+    padding:10px 6px 12px;
+    color:var(--ink-dim);
+    font-size:.86rem; font-weight:600;
+    letter-spacing:.02em;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+
+  main{flex:1; padding:18px 16px 60px;}
+  .view{display:none; flex-direction:column; gap:16px;}
+  .view.active{display:flex;}
+
+  /* ---------- Cards / generic ---------- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .card h2{font-size:1.02rem; margin:0 0 4px; color:var(--ink);}
+  .card h3{font-family:"Source Sans 3",sans-serif; font-weight:700; font-size:.82rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-dim); margin:0 0 10px;}
+  .hint{font-size:.82rem; color:var(--ink-dim); line-height:1.5;}
+
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    appearance:none; border:1px solid var(--line-strong); background:var(--surface-2);
+    color:var(--ink); border-radius:999px; padding:8px 16px; font-size:.86rem; font-weight:600;
+    cursor:pointer; transition:background .15s, border-color .15s, transform .05s;
+  }
+  .btn:hover{background:var(--surface-3);}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--accent); color:var(--accent-ink); border-color:transparent;}
+  .btn.primary:hover{filter:brightness(1.05);}
+  .btn.ghost{background:transparent; border-color:transparent; color:var(--ink-dim); padding:8px 10px;}
+  .btn.ghost:hover{color:var(--ink); background:var(--surface-2);}
+  .btn.small{padding:5px 12px; font-size:.78rem;}
+  .btn[disabled]{opacity:.4; cursor:not-allowed;}
+  .btn.chip{
+    border-radius:999px; padding:6px 13px; font-size:.8rem; font-weight:600;
+    background:var(--surface-2); border:1px solid var(--line);
+    color:var(--ink-dim);
+  }
+  .btn.chip.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+
+  label.field{display:flex; flex-direction:column; gap:5px; font-size:.78rem; color:var(--ink-dim); font-weight:600; letter-spacing:.02em;}
+  input[type=text], input[type=number], input[type=date], select{
+    font-family:inherit; font-size:.92rem; color:var(--ink);
+    background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+    padding:8px 10px; width:100%;
+  }
+  input:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--accent); outline-offset:1px;
+  }
+  input[type=number]{font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums;}
+
+  /* ---------- Setup ---------- */
+  .stepper-count{display:flex; gap:6px;}
+  .count-btn{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--line-strong);
+    background:var(--surface-2); color:var(--ink); font-family:"IBM Plex Mono",monospace;
+    font-weight:600; cursor:pointer;
+  }
+  .count-btn.active{background:var(--accent); color:var(--accent-ink); border-color:transparent;}
+
+  .player-row{
+    display:grid; grid-template-columns:auto 1fr; gap:10px 12px; align-items:center;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .player-row:last-child{border-bottom:none;}
+  .player-num{
+    width:26px;height:26px;border-radius:50%;background:var(--surface-3);
+    display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem; color:var(--ink-dim); font-weight:600;
+  }
+  .player-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .side-toggle{display:flex; border:1px solid var(--line-strong); border-radius:var(--radius-sm); overflow:hidden;}
+  .side-toggle button{flex:1; border:none; background:var(--surface-2); color:var(--ink-dim); padding:8px 4px; font-size:.82rem; cursor:pointer; font-weight:600;}
+  .side-toggle button.active{background:var(--accent); color:var(--accent-ink);}
+
+  /* ---------- Ledger ---------- */
+  .ledger-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-sm);}
+  table.ledger{border-collapse:collapse; width:100%; min-width:640px;}
+  table.ledger th, table.ledger td{padding:8px 8px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap;}
+  table.ledger th{
+    font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--surface);
+    font-weight:700; padding-top:10px; padding-bottom:10px;
+  }
+  table.ledger th .cat-name{display:block;}
+  table.ledger td.name-cell{text-align:left; font-weight:600; position:sticky; left:0; background:var(--surface); min-width:104px;}
+  table.ledger th.name-cell{position:sticky; left:0; background:var(--ink); text-align:left; padding-left:10px;}
+  table.ledger tr:last-child td{border-bottom:none;}
+  table.ledger td input[type=number]{width:56px; text-align:center; padding:6px 4px;}
+  table.ledger td.total-cell{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:1rem; color:var(--ink);}
+  table.ledger tfoot td{font-weight:700; background:var(--surface-2);}
+  .sci-inputs{display:flex; gap:3px; justify-content:center;}
+  .sci-inputs input{width:32px; padding:5px 2px;}
+  .sci-total{font-size:.72rem; color:var(--ink-dim); margin-top:2px;}
+  th.cat-military{background:var(--cat-military);}
+  th.cat-treasury{background:var(--cat-treasury);}
+  th.cat-civil{background:var(--cat-civil);}
+  th.cat-commerce{background:var(--cat-commerce);}
+  th.cat-guild{background:var(--cat-guild);}
+  th.cat-wonder{background:var(--cat-wonder);}
+  th.cat-science{background:var(--cat-science);}
+
+  .save-bar{display:flex; justify-content:flex-end; gap:8px;}
+
+  /* ---------- Wizard (pontuação por etapa) ---------- */
+  .wizard-progress{display:flex; gap:5px; margin-bottom:16px;}
+  .wizard-dot{flex:1; height:5px; border-radius:3px; background:var(--surface-3); transition:background .2s;}
+
+  .wizard-step-head{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .wizard-step-badge{
+    width:30px; height:30px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:.82rem;
+    color:#fff; background:var(--step-color, var(--accent));
+  }
+  .wizard-step-title{margin:0;}
+  .wizard-step-title .of{font-family:"Source Sans 3",sans-serif; font-weight:600; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); display:block; margin-bottom:1px;}
+  .wizard-rule{
+    font-size:.82rem; color:var(--ink-dim); line-height:1.55; margin:10px 0 16px;
+    padding:10px 12px; background:var(--surface-2); border-left:3px solid var(--step-color, var(--accent)); border-radius:0 8px 8px 0;
+  }
+
+  .wiz-player-row{padding:12px 0; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .wiz-player-row:last-child{border-bottom:none;}
+  .wiz-player-id{flex:1 1 140px; min-width:120px;}
+  .wiz-player-name{font-weight:700; font-size:.95rem;}
+  .wiz-player-sub{font-size:.76rem; color:var(--ink-dim); margin-top:1px;}
+  .wiz-input-area{display:flex; align-items:center; gap:10px; flex:0 0 auto;}
+  .wiz-input-area input[type=number]{
+    width:76px; text-align:center; font-size:1.05rem; padding:9px 6px;
+  }
+  .wiz-pts-preview{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--step-color, var(--accent)); font-weight:700; min-width:52px; text-align:right;}
+
+  .sci-cols{display:flex; align-items:flex-end; gap:8px;}
+  .sci-col{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .sci-col label{font-size:.64rem; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); font-weight:700;}
+  .sci-col input{width:46px; text-align:center; padding:8px 2px; font-size:.95rem;}
+  .sci-col.computed{color:var(--ink-dim);}
+  .sci-col.computed .sci-computed-val{
+    width:46px; height:37px; display:flex; align-items:center; justify-content:center;
+    background:var(--surface-3); border-radius:var(--radius-sm); font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:.86rem;
+  }
+  .sci-plus{font-size:1rem; color:var(--ink-faint); padding-bottom:8px;}
+  .sci-breakdown{flex-basis:100%; font-size:.74rem; color:var(--ink-dim); margin-top:6px;}
+  .sci-wild-row{margin-top:8px; display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--ink-dim);}
+  .sci-wild-row input{width:46px; text-align:center; padding:5px 2px;}
+
+  .wizard-nav{justify-content:space-between;}
+
+  .summary-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-sm);}
+
+  /* ---------- Podium ---------- */
+  .podium-item{
+    display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--line);
+  }
+  .podium-item:last-child{border-bottom:none;}
+  .rank{
+    font-family:"Cinzel",serif; font-weight:700; font-size:1.05rem; color:var(--ink-dim);
+    width:22px; text-align:center; flex-shrink:0;
+  }
+  .podium-item.winner .rank{color:var(--accent);}
+  .podium-name{font-weight:700; flex:1;}
+  .podium-sub{font-size:.76rem; color:var(--ink-dim);}
+  .podium-total{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:1.05rem;}
+
+  /* ---------- History ---------- */
+  .match-card{cursor:pointer;}
+  .match-head{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .match-head .m-left{display:flex; flex-direction:column; gap:2px;}
+  .match-title{font-weight:700; font-size:.94rem;}
+  .match-meta{font-size:.78rem; color:var(--ink-dim);}
+  .match-winner{font-size:.82rem; color:var(--accent); font-weight:700;}
+  .chevron{transition:transform .18s ease; color:var(--ink-faint); flex-shrink:0;}
+  .match-card.open .chevron{transform:rotate(180deg);}
+  .match-detail{display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);}
+  .match-card.open .match-detail{display:block;}
+  .match-actions{display:flex; justify-content:flex-end; margin-top:10px;}
+
+  .empty{
+    text-align:center; padding:40px 18px; color:var(--ink-dim); font-size:.9rem;
+  }
+  .empty .glyph{font-size:28px; display:block; margin-bottom:10px; opacity:.7;}
+
+  /* ---------- Stats filters ---------- */
+  .filter-group{display:flex; flex-direction:column; gap:6px; margin-bottom:12px;}
+  .filter-label{font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:700;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px;}
+  .date-range{display:flex; gap:8px; align-items:center;}
+  .date-range input{flex:1;}
+
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat-tile{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:12px 12px 10px; box-shadow:var(--shadow);
+  }
+  .stat-tile .k{font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); font-weight:700;}
+  .stat-tile .v{font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; color:var(--ink); margin-top:2px;}
+  .stat-tile .d{font-size:.76rem; color:var(--ink-dim); margin-top:3px;}
+  .stat-tile.wide{grid-column:1 / -1;}
+
+  .bar-row{display:flex; align-items:center; gap:8px; margin:7px 0; flex-wrap:wrap;}
+  .bar-label{width:78px; font-size:.76rem; color:var(--ink-dim); flex-shrink:0;}
+  .bar-track{flex:1 1 60px; min-width:60px; height:9px; border-radius:5px; background:var(--surface-3); overflow:hidden;}
+  .bar-fill{height:100%; border-radius:5px;}
+  .bar-val{width:auto; min-width:44px; max-width:100%; text-align:right; font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-dim); flex-shrink:0; white-space:nowrap;}
+  @media (max-width:420px){
+    .bar-val{flex:1 0 100%; text-align:left; padding-left:86px; margin-top:-2px;}
+  }
+
+  svg.linechart{width:100%; height:auto; display:block;}
+  .h2h-row{display:flex; align-items:center; gap:10px; padding:8px 0;}
+  .h2h-name{flex:1; font-size:.86rem; font-weight:600;}
+  .h2h-score{font-family:"IBM Plex Mono",monospace; font-weight:700;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;}
+  .legend-item{display:flex; align-items:center; gap:5px; font-size:.72rem; color:var(--ink-dim);}
+  .legend-dot{width:9px; height:9px; border-radius:2px; flex-shrink:0;}
+
+  @media (min-width:600px){
+    .stat-grid{grid-template-columns:1fr 1fr 1fr;}
+    .player-grid{grid-template-columns:1fr 1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <span class="glyph">🏛</span>
+      <div>
+        <h1>Placar das 7 Maravilhas</h1>
+        <div class="sub">Registro de partidas &amp; estatísticas</div>
+      </div>
+    </div>
+    <div class="sync-badge sync-pending" id="sync-badge">● Conectando…</div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="setup">Nova Partida</button>
+    <button class="tab-btn" data-tab="history">Histórico</button>
+    <button class="tab-btn" data-tab="stats">Estatísticas</button>
+  </nav>
+
+  <main>
+    <!-- ================= SETUP / LEDGER ================= -->
+    <section class="view active" id="view-setup">
+      <div class="card" id="setup-card">
+        <h3>Jogadores</h3>
+        <div class="row" style="justify-content:space-between; margin-bottom:14px;">
+          <div class="stepper-count" id="count-buttons"></div>
+        </div>
+        <div id="player-rows"></div>
+      </div>
+
+      <div class="card" id="wizard-card" style="display:none;">
+        <div class="wizard-progress" id="wizard-progress"></div>
+        <div id="wizard-body"></div>
+        <div class="save-bar wizard-nav" style="margin-top:16px;">
+          <button class="btn ghost" id="btn-wizard-back">Voltar</button>
+          <button class="btn primary" id="btn-wizard-next">Avançar</button>
+        </div>
+      </div>
+
+      <div class="card" id="podium-card" style="display:none;">
+        <h3>Resultado</h3>
+        <div id="podium-list"></div>
+        <div class="save-bar" style="margin-top:12px;">
+          <button class="btn primary" id="btn-newmatch">Nova partida</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HISTORY ================= -->
+    <section class="view" id="view-history">
+      <div id="history-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </section>
+
+    <!-- ================= STATS ================= -->
+    <section class="view" id="view-stats">
+      <div class="card">
+        <h3>Filtros</h3>
+        <div class="filter-group">
+          <div class="filter-label">Jogadores</div>
+          <div class="chip-row" id="f-players"></div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Maravilhas</div>
+          <div class="chip-row" id="f-wonders"></div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Lado da maravilha</div>
+          <div class="chip-row" id="f-side"></div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Nº de jogadores na partida</div>
+          <div class="chip-row" id="f-count"></div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Período</div>
+          <div class="date-range">
+            <input type="date" id="f-date-from">
+            <span class="hint">até</span>
+            <input type="date" id="f-date-to">
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn ghost small" id="f-clear">Limpar filtros</button>
+        </div>
+      </div>
+
+      <div id="stats-output"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Firebase (SDK "compat", sem necessidade de build/bundler) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================================
+  // CONFIGURAÇÃO DO FIREBASE — cole aqui os valores do SEU projeto antes de publicar.
+  // Onde encontrar: console.firebase.google.com → seu projeto → ⚙️ Configurações do
+  // projeto → aba "Geral" → seção "Seus apps" → app Web → "Config" do SDK.
+  // Esses valores NÃO são secretos (ficam visíveis no código do site) — quem protege
+  // os dados são as regras do Firestore, não essa chave.
+  // ============================================================================
+  var firebaseConfig = {
+    apiKey: "AIzaSyBkPV4UNc-QnNpd6bKMJgq2I7ooYJz_p2A",
+    authDomain: "placar-7-maravilhas.firebaseapp.com",
+    projectId: "placar-7-maravilhas",
+    storageBucket: "placar-7-maravilhas.firebasestorage.app",
+    messagingSenderId: "278651671706",
+    appId: "1:278651671706:web:957b94dd17b90fa622fb23"
+  };
+  // ============================================================================
+
+  var WONDERS = ["Gizé","Babilônia","Olímpia","Rodes","Éfeso","Alexandria","Halicarnasso"];
+  // Ordem e regras conforme a caderneta oficial de pontuação (7 Wonders, 2ª edição)
+  var CATS = [
+    {key:"wonderPts", label:"Maravilha", short:"Maravilha", cls:"cat-wonder", type:"number",
+      rule:"Some os pontos de vitória de todos os estágios construídos da sua Maravilha."},
+    {key:"treasury", label:"Tesouro", short:"Tesouro", cls:"cat-treasury", type:"coins",
+      rule:"Receba 1 ponto de vitória para cada conjunto completo de 3 Moedas no seu Tesouro."},
+    {key:"military", label:"Conflitos Militares", short:"Militar", cls:"cat-military", type:"number",
+      rule:"Some o valor de todas as suas fichas de Derrota e Vitória Militar. O total pode ser negativo."},
+    {key:"civil", label:"Cartas Azuis", short:"Civil", cls:"cat-civil", type:"number",
+      rule:"Some os pontos de vitória impressos nas Cartas Azuis (Estruturas Civis) da sua Cidade."},
+    {key:"commerce", label:"Cartas Amarelas", short:"Comércio", cls:"cat-commerce", type:"number",
+      rule:"Some os pontos de vitória das Cartas Amarelas (Estruturas Comerciais), conforme o efeito de cada uma."},
+    {key:"science", label:"Cartas Verdes", short:"Ciência", cls:"cat-science", type:"science",
+      rule:"Símbolos idênticos valem o quadrado da quantidade (1, 4, 9, 16, 25, 36…). Cada conjunto completo de 3 símbolos diferentes vale +7 pontos — as duas parcelas se somam."},
+    {key:"guild", label:"Cartas Roxas", short:"Guildas", cls:"cat-guild", type:"number",
+      rule:"Some os pontos de vitória das Cartas Roxas (Guildas), conforme o efeito de cada uma."}
+  ];
+
+  var matches = [];
+  var numPlayers = 4;
+  var statFilters = { players:[], wonders:[], side:"todos", count:"todos", from:"", to:"" };
+
+  // ---------------- Persistência: histórico compartilhado via Firestore ----------------
+  var db = null;
+
+  function matchTimestamp(m){
+    return m.createdAt || (m.date ? new Date(m.date).getTime() : 0);
+  }
+  function sortMatches(){
+    matches.sort(function(a,b){ return matchTimestamp(b)-matchTimestamp(a); });
+  }
+  function refreshActiveView(){
+    var activeTab = document.querySelector(".tab-btn.active");
+    if(!activeTab) return;
+    if(activeTab.dataset.tab==="history") renderHistory();
+    if(activeTab.dataset.tab==="stats") renderStats();
+  }
+  function setSyncBadge(mode){
+    var badge = document.getElementById("sync-badge");
+    if(!badge) return;
+    badge.classList.remove("sync-on","sync-off","sync-pending");
+    if(mode==="on"){
+      badge.classList.add("sync-on"); badge.textContent="● Sincronizado com o grupo";
+      badge.title="Todo mundo que abrir este link vê e edita o mesmo histórico e as mesmas estatísticas.";
+    } else if(mode==="off"){
+      badge.classList.add("sync-off"); badge.textContent="● Erro de conexão";
+      badge.title="Não foi possível conectar ao histórico compartilhado. Veja o console (F12) para detalhes — provavelmente o firebaseConfig no topo do arquivo precisa ser preenchido.";
+    } else {
+      badge.classList.add("sync-pending"); badge.textContent="● Conectando…";
+      badge.title="";
+    }
+  }
+  function initPersistence(){
+    setSyncBadge("pending");
+    if(!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey==="COLE_AQUI"){
+      setSyncBadge("off");
+      console.warn("Configure o objeto firebaseConfig no topo do arquivo index.html antes de publicar o site.");
+      return;
+    }
+    try{
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      db.collection("matches").onSnapshot(function(snap){
+        matches = snap.docs.map(function(d){ return d.data(); });
+        sortMatches();
+        refreshActiveView();
+        setSyncBadge("on");
+      }, function(err){
+        console.error("Falha na sincronização do histórico:", err);
+        setSyncBadge("off");
+      });
+    }catch(e){
+      console.error("Falha ao iniciar o Firebase:", e);
+      setSyncBadge("off");
+    }
+  }
+
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function todayISO(){ var d=new Date(); return d.toISOString().slice(0,10); }
+  function formatDate(iso){
+    var p = iso.split("-");
+    return p[2]+"/"+p[1]+"/"+p[0];
+  }
+  function esc(s){
+    var d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML;
+  }
+
+  // ---------------- Science scoring ----------------
+  // Regra oficial: símbolos idênticos valem o quadrado da quantidade (tabela da p.8 do manual);
+  // cada conjunto completo de 3 símbolos DIFERENTES vale +7 pontos, somado à parte anterior.
+  // Símbolos livres (ex.: Guilda dos Cientistas) são testados em todas as combinações possíveis
+  // para encontrar a alocação que resulta na maior pontuação total.
+  function bestScienceDetailed(compass,tablet,gear,wild){
+    var best = null;
+    for(var a=0;a<=wild;a++){
+      for(var b=0;b<=wild-a;b++){
+        var c = wild-a-b;
+        var C=compass+a, T=tablet+b, G=gear+c;
+        var identicalPts = C*C+T*T+G*G;
+        var sets = Math.min(C,T,G);
+        var total = identicalPts + 7*sets;
+        if(!best || total>best.total){ best = {total:total, sets:sets, identicalPts:identicalPts, C:C, T:T, G:G}; }
+      }
+    }
+    return best;
+  }
+
+  // ================= TAB NAV =================
+  var tabButtons = document.querySelectorAll(".tab-btn");
+  tabButtons.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabButtons.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+      document.getElementById("view-"+btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab==="history") renderHistory();
+      if(btn.dataset.tab==="stats") renderStats();
+    });
+  });
+
+  // ================= SETUP =================
+  var countWrap = document.getElementById("count-buttons");
+  for(var n=3;n<=7;n++){
+    (function(n){
+      var b=document.createElement("button");
+      b.className="count-btn"+(n===numPlayers?" active":"");
+      b.textContent=n;
+      b.addEventListener("click", function(){
+        numPlayers=n;
+        document.querySelectorAll(".count-btn").forEach(function(c){c.classList.remove("active");});
+        b.classList.add("active");
+        renderPlayerRows();
+        document.getElementById("wizard-card").style.display="none";
+        document.getElementById("podium-card").style.display="none";
+      });
+      countWrap.appendChild(b);
+    })(n);
+  }
+
+  function renderPlayerRows(){
+    var wrap = document.getElementById("player-rows");
+    var prev = wrap.querySelectorAll(".player-row");
+    var prevData = [];
+    prev.forEach(function(row){
+      prevData.push({
+        name: row.querySelector(".p-name").value,
+        wonder: row.querySelector(".p-wonder").value,
+        side: row.querySelector(".p-side.active-side") ? row.querySelector(".p-side.active-side").dataset.side : "dia"
+      });
+    });
+    wrap.innerHTML="";
+    for(var i=0;i<numPlayers;i++){
+      let data = prevData[i] || {name:"", wonder: WONDERS[i%WONDERS.length], side:"dia"};
+      let row = document.createElement("div");
+      row.className="player-row";
+      row.innerHTML =
+        '<div class="player-num">'+(i+1)+'</div>'+
+        '<div class="player-grid">'+
+          '<label class="field">Nome'+
+            '<input type="text" class="p-name" placeholder="Jogador '+(i+1)+'" value="'+esc(data.name)+'">'+
+          '</label>'+
+          '<label class="field">Maravilha'+
+            '<select class="p-wonder"></select>'+
+          '</label>'+
+          '<div class="field">Lado'+
+            '<div class="side-toggle">'+
+              '<button type="button" class="p-side" data-side="dia">Dia</button>'+
+              '<button type="button" class="p-side" data-side="noite">Noite</button>'+
+            '</div>'+
+          '</div>'+
+        '</div>';
+      var sel = row.querySelector(".p-wonder");
+      WONDERS.forEach(function(w){
+        var opt=document.createElement("option"); opt.value=w; opt.textContent=w;
+        if(w===data.wonder) opt.selected=true;
+        sel.appendChild(opt);
+      });
+      let sideBtns = row.querySelectorAll(".p-side");
+      sideBtns.forEach(function(sb){
+        if(sb.dataset.side===data.side) sb.classList.add("active","active-side");
+        sb.addEventListener("click", function(){
+          sideBtns.forEach(function(x){x.classList.remove("active","active-side");});
+          sb.classList.add("active","active-side");
+        });
+      });
+      wrap.appendChild(row);
+    }
+  }
+  renderPlayerRows();
+
+  // Botão "Iniciar pontuação" (mantido dinâmico para preservar a estrutura original)
+  var buildBtnHolder = document.createElement("div");
+  buildBtnHolder.className="save-bar";
+  buildBtnHolder.style.marginTop="14px";
+  buildBtnHolder.innerHTML = '<button class="btn primary" id="btn-build-ledger">Iniciar pontuação</button>';
+  document.getElementById("setup-card").appendChild(buildBtnHolder);
+
+  document.getElementById("btn-build-ledger").addEventListener("click", startWizard);
+
+  function getPlayersFromSetup(){
+    var rows = document.querySelectorAll("#player-rows .player-row");
+    var players = [];
+    rows.forEach(function(row,i){
+      var name = row.querySelector(".p-name").value.trim() || ("Jogador "+(i+1));
+      var wonder = row.querySelector(".p-wonder").value;
+      var sideBtn = row.querySelector(".p-side.active-side");
+      var side = sideBtn ? sideBtn.dataset.side : "dia";
+      players.push({name:name, wonder:wonder, side:side});
+    });
+    return players;
+  }
+
+  function numval(el){ var v=parseInt(el.value,10); return isNaN(v)?0:v; }
+
+  function computeTotal(e){
+    return e.wonderPts + e.treasury + e.military + e.civil + e.commerce + e.science + e.guild;
+  }
+
+  // ================= WIZARD (pontuação por etapa, seguindo a caderneta oficial) =================
+  var wizard = null;
+
+  function startWizard(){
+    var players = getPlayersFromSetup();
+    wizard = {
+      stepIndex: 0,
+      entries: players.map(function(p){
+        return {
+          name:p.name, wonder:p.wonder, side:p.side,
+          military:0, coins:0, treasury:0, civil:0, commerce:0, guild:0, wonderPts:0,
+          sciC:0, sciT:0, sciG:0, sciW:0, science:0
+        };
+      })
+    };
+    document.getElementById("wizard-card").style.display="block";
+    document.getElementById("podium-card").style.display="none";
+    renderWizardStep();
+    document.getElementById("wizard-card").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  function renderWizardProgress(){
+    var wrap = document.getElementById("wizard-progress");
+    wrap.innerHTML="";
+    var total = CATS.length+1;
+    for(var i=0;i<total;i++){
+      var dot = document.createElement("div");
+      var color = i<CATS.length ? "var(--"+CATS[i].cls+")" : "var(--accent)";
+      dot.className = "wizard-dot"+(i<=wizard.stepIndex?" done":"")+(i===wizard.stepIndex?" current":"");
+      if(i<=wizard.stepIndex) dot.style.background = color;
+      wrap.appendChild(dot);
+    }
+  }
+
+  function renderWizardStep(){
+    renderWizardProgress();
+    var body = document.getElementById("wizard-body");
+    var backBtn = document.getElementById("btn-wizard-back");
+    var nextBtn = document.getElementById("btn-wizard-next");
+    var totalSteps = CATS.length+1;
+
+    if(wizard.stepIndex < CATS.length){
+      var cat = CATS[wizard.stepIndex];
+      var color = "var(--"+cat.cls+")";
+      var html = '<div class="wizard-step-head">'+
+        '<div class="wizard-step-badge" style="--step-color:'+color+';">'+(wizard.stepIndex+1)+'</div>'+
+        '<h2 class="wizard-step-title"><span class="of">Etapa '+(wizard.stepIndex+1)+' de '+totalSteps+'</span>'+cat.label+'</h2>'+
+      '</div>';
+      html += '<p class="wizard-rule" style="--step-color:'+color+';">'+cat.rule+'</p>';
+
+      wizard.entries.forEach(function(e, idx){
+        html += '<div class="wiz-player-row" data-idx="'+idx+'">';
+        html += '<div class="wiz-player-id"><div class="wiz-player-name">'+esc(e.name)+'</div><div class="wiz-player-sub">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></div>';
+
+        if(cat.type==="number"){
+          html += '<div class="wiz-input-area"><input type="number" class="wiz-input" data-key="'+cat.key+'" value="'+e[cat.key]+'" step="1"></div>';
+        } else if(cat.type==="coins"){
+          html += '<div class="wiz-input-area">'+
+            '<input type="number" class="wiz-input" data-key="coins" min="0" value="'+e.coins+'" step="1">'+
+            '<span class="wiz-pts-preview" data-preview="treasury" style="color:'+color+';">'+Math.floor(e.coins/3)+' pts</span>'+
+          '</div>';
+        } else if(cat.type==="science"){
+          html += '<div style="flex-basis:100%;"><div class="sci-cols">'+
+            '<div class="sci-col"><label>Bússola</label><input type="number" class="wiz-input" data-key="sciC" min="0" value="'+e.sciC+'"></div>'+
+            '<div class="sci-col"><label>Tábua</label><input type="number" class="wiz-input" data-key="sciT" min="0" value="'+e.sciT+'"></div>'+
+            '<div class="sci-col"><label>Roda</label><input type="number" class="wiz-input" data-key="sciG" min="0" value="'+e.sciG+'"></div>'+
+            '<div class="sci-plus">+</div>'+
+            '<div class="sci-col computed"><label>Conjuntos</label><div class="sci-computed-val" data-computed-sets>0</div></div>'+
+            '<div class="sci-plus">=</div>'+
+            '<div class="sci-col computed"><label>Pontos</label><div class="sci-computed-val" data-computed-pts style="color:'+color+';">0</div></div>'+
+          '</div>'+
+          '<div class="sci-wild-row">Símbolos livres (ex.: Guilda dos Cientistas): <input type="number" class="wiz-input" data-key="sciW" min="0" value="'+e.sciW+'"></div>'+
+          '<div class="sci-breakdown" data-breakdown></div>'+
+          '</div>';
+        }
+        html += '</div>';
+      });
+
+      body.innerHTML = html;
+      wireStepInputs(cat);
+      backBtn.disabled = false;
+      nextBtn.textContent = (wizard.stepIndex===CATS.length-1) ? "Ver resumo" : "Avançar";
+    } else {
+      body.innerHTML = renderSummaryStep();
+      backBtn.disabled = false;
+      nextBtn.textContent = "Salvar partida";
+    }
+  }
+
+  function wireStepInputs(cat){
+    var rows = document.querySelectorAll("#wizard-body .wiz-player-row");
+    rows.forEach(function(row){
+      var idx = parseInt(row.dataset.idx,10);
+      row.querySelectorAll(".wiz-input").forEach(function(input){
+        input.addEventListener("input", function(){
+          wizard.entries[idx][input.dataset.key] = numval(input);
+          if(cat.type==="coins"){
+            wizard.entries[idx].treasury = Math.floor(wizard.entries[idx].coins/3);
+            row.querySelector('[data-preview="treasury"]').textContent = wizard.entries[idx].treasury+" pts";
+          } else if(cat.type==="science"){
+            updateScienceRow(row, wizard.entries[idx]);
+          }
+        });
+      });
+      if(cat.type==="science") updateScienceRow(row, wizard.entries[idx]);
+    });
+  }
+
+  // Explica visualmente a 4ª coluna da ciência: símbolos idênticos (n²) + conjuntos de 3 diferentes (7 pts cada)
+  function updateScienceRow(row, e){
+    var best = bestScienceDetailed(e.sciC, e.sciT, e.sciG, e.sciW);
+    e.science = best.total;
+    row.querySelector("[data-computed-sets]").textContent = best.sets;
+    row.querySelector("[data-computed-pts]").textContent = best.total;
+    var wildNote = e.sciW>0 ? " (incl. "+e.sciW+" símbolo(s) livre(s) alocado(s) do jeito mais vantajoso)" : "";
+    row.querySelector("[data-breakdown]").textContent =
+      best.identicalPts+" pts de símbolos idênticos + "+best.sets+" conjunto(s) × 7 = "+(best.sets*7)+" pts"+wildNote+".";
+  }
+
+  function renderSummaryStep(){
+    wizard.entries.forEach(function(e){ e.total = computeTotal(e); });
+    var maxTotal = Math.max.apply(null, wizard.entries.map(function(e){return e.total;}));
+    var html = '<div class="wizard-step-head">'+
+      '<div class="wizard-step-badge" style="--step-color:var(--accent);">✓</div>'+
+      '<h2 class="wizard-step-title"><span class="of">Etapa '+(CATS.length+1)+' de '+(CATS.length+1)+'</span>Resumo</h2>'+
+    '</div>';
+    html += '<p class="wizard-rule">Confira os pontos de cada seção antes de salvar. Toque em "Voltar" para corrigir alguma etapa.</p>';
+    html += '<div class="summary-wrap"><table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
+      CATS.map(function(c){return '<th class="'+c.cls+'">'+c.short+'</th>';}).join("")+
+      '<th style="background:var(--ink);">Total</th></tr></thead><tbody>';
+    wizard.entries.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(e){
+      html += '<tr><td class="name-cell">'+esc(e.name)+(e.total===maxTotal?" 🏆":"")+'<div class="hint">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></td>'+
+        CATS.map(function(c){return '<td>'+e[c.key]+'</td>';}).join("")+
+        '<td class="total-cell">'+e.total+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  document.getElementById("btn-wizard-back").addEventListener("click", function(){
+    if(!wizard) return;
+    if(wizard.stepIndex===0){
+      document.getElementById("wizard-card").style.display="none";
+      document.getElementById("setup-card").scrollIntoView({behavior:"smooth", block:"start"});
+      return;
+    }
+    wizard.stepIndex--;
+    renderWizardStep();
+    document.getElementById("wizard-card").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  document.getElementById("btn-wizard-next").addEventListener("click", function(){
+    if(!wizard) return;
+    if(wizard.stepIndex < CATS.length){
+      wizard.stepIndex++;
+      renderWizardStep();
+      document.getElementById("wizard-card").scrollIntoView({behavior:"smooth", block:"start"});
+    } else {
+      saveMatchFromWizard();
+    }
+  });
+
+  function saveMatchFromWizard(){
+    var entries = wizard.entries.map(function(e){
+      return {
+        name:e.name, wonder:e.wonder, side:e.side,
+        military:e.military, coins:e.coins, treasury:e.treasury,
+        civil:e.civil, commerce:e.commerce, guild:e.guild,
+        wonderPts:e.wonderPts, science:e.science, total:computeTotal(e)
+      };
+    });
+    var maxTotal = Math.max.apply(null, entries.map(function(e){return e.total;}));
+    var tied = entries.filter(function(e){return e.total===maxTotal;});
+    if(tied.length>1){
+      var maxCoins = Math.max.apply(null, tied.map(function(e){return e.coins;}));
+      tied.forEach(function(e){ e.isWinner = e.coins===maxCoins; });
+      entries.forEach(function(e){ if(e.total!==maxTotal) e.isWinner=false; });
+    } else {
+      entries.forEach(function(e){ e.isWinner = (e.total===maxTotal); });
+    }
+
+    var match = { id:uid(), date: todayISO(), createdAt: Date.now(), numPlayers: entries.length, players: entries };
+
+    if(!db){
+      alert("O histórico compartilhado ainda não está configurado (firebaseConfig). A partida não foi salva.");
+      return;
+    }
+    db.collection("matches").doc(match.id).set(match).catch(function(err){
+      console.error("Falha ao salvar partida:", err);
+      alert("Não foi possível salvar a partida. Verifique sua conexão e tente novamente.");
+    });
+
+    wizard = null;
+    document.getElementById("wizard-card").style.display="none";
+    showPodium(match);
+  }
+
+  function showPodium(match){
+    document.getElementById("wizard-card").style.display="none";
+    var sorted = match.players.slice().sort(function(a,b){ return b.total-a.total; });
+    var html = "";
+    sorted.forEach(function(p, idx){
+      html += '<div class="podium-item'+(p.isWinner?" winner":"")+'">'+
+        '<div class="rank">'+(idx+1)+'º</div>'+
+        '<div style="flex:1;">'+
+          '<div class="podium-name">'+esc(p.name)+(p.isWinner?" 🏆":"")+'</div>'+
+          '<div class="podium-sub">'+p.wonder+' · '+(p.side==="dia"?"Dia":"Noite")+'</div>'+
+        '</div>'+
+        '<div class="podium-total num">'+p.total+'</div>'+
+      '</div>';
+    });
+    document.getElementById("podium-list").innerHTML = html;
+    document.getElementById("podium-card").style.display="block";
+    document.getElementById("podium-card").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  document.getElementById("btn-newmatch").addEventListener("click", function(){
+    document.getElementById("podium-card").style.display="none";
+    renderPlayerRows();
+    document.getElementById("setup-card").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  // ================= HISTORY =================
+  function renderHistory(){
+    var wrap = document.getElementById("history-list");
+    if(matches.length===0){
+      wrap.innerHTML = '<div class="card empty"><span class="glyph">📜</span>Nenhuma partida registrada ainda.<br>Jogue uma partida na aba "Nova Partida" para começar seu histórico.</div>';
+      return;
+    }
+    wrap.innerHTML="";
+    matches.forEach(function(m){
+      var winner = m.players.filter(function(p){return p.isWinner;}).map(function(p){return p.name;}).join(" & ");
+      var winnerTotal = Math.max.apply(null, m.players.map(function(p){return p.total;}));
+      var card = document.createElement("div");
+      card.className="card match-card";
+      card.innerHTML =
+        '<div class="match-head">'+
+          '<div class="m-left">'+
+            '<div class="match-title">'+formatDate(m.date)+' · '+m.numPlayers+' jogadores</div>'+
+            '<div class="match-winner">🏆 '+esc(winner)+' — '+winnerTotal+' pts</div>'+
+          '</div>'+
+          '<svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>'+
+        '</div>'+
+        '<div class="match-detail">'+
+          '<div class="ledger-wrap">'+buildDetailTable(m)+'</div>'+
+          '<div class="match-actions"><button class="btn ghost small btn-del" data-id="'+m.id+'">Excluir partida</button></div>'+
+        '</div>';
+      card.querySelector(".match-head").addEventListener("click", function(){
+        card.classList.toggle("open");
+      });
+      card.querySelector(".btn-del").addEventListener("click", function(e){
+        e.stopPropagation();
+        if(confirm("Excluir esta partida para todo o grupo? Essa ação não pode ser desfeita.")){
+          matches = matches.filter(function(x){return x.id!==m.id;});
+          renderHistory();
+          if(db){
+            db.collection("matches").doc(m.id).delete().catch(function(err){
+              console.error("Falha ao excluir partida:", err);
+            });
+          }
+        }
+      });
+      wrap.appendChild(card);
+    });
+  }
+
+  function buildDetailTable(m){
+    var sorted = m.players.slice().sort(function(a,b){return b.total-a.total;});
+    var head = '<table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
+      CATS.map(function(c){return '<th class="'+c.cls+'">'+c.label+'</th>';}).join("")+
+      '<th style="background:var(--ink);">Total</th></tr></thead><tbody>';
+    var body = sorted.map(function(p){
+      return '<tr><td class="name-cell">'+esc(p.name)+(p.isWinner?" 🏆":"")+'<div class="hint">'+p.wonder+' · '+(p.side==="dia"?"Dia":"Noite")+'</div></td>'+
+        CATS.map(function(c){return '<td>'+p[c.key]+'</td>';}).join("")+
+        '<td class="total-cell">'+p.total+'</td></tr>';
+    }).join("");
+    return head+body+'</tbody></table>';
+  }
+
+  // ================= STATS =================
+  function allPlayerNames(){
+    var set=[]; matches.forEach(function(m){ m.players.forEach(function(p){ if(set.indexOf(p.name)===-1) set.push(p.name); }); });
+    return set.sort();
+  }
+  function usedWonders(){
+    var set=[]; matches.forEach(function(m){ m.players.forEach(function(p){ if(set.indexOf(p.wonder)===-1) set.push(p.wonder); }); });
+    return set.sort();
+  }
+
+  function chipToggle(container, id){
+    var i = container.indexOf(id);
+    if(i===-1) container.push(id); else container.splice(i,1);
+  }
+
+  function renderFilterChips(){
+    var pWrap = document.getElementById("f-players");
+    var names = allPlayerNames();
+    pWrap.innerHTML = names.length ? "" : '<span class="hint">Sem dados ainda.</span>';
+    names.forEach(function(name){
+      var b=document.createElement("button");
+      b.className="btn chip"+(statFilters.players.indexOf(name)!==-1?" active":"");
+      b.textContent=name;
+      b.addEventListener("click", function(){
+        chipToggle(statFilters.players, name);
+        renderFilterChips(); renderStats();
+      });
+      pWrap.appendChild(b);
+    });
+
+    var wWrap = document.getElementById("f-wonders");
+    var wonders = usedWonders();
+    wWrap.innerHTML = wonders.length ? "" : '<span class="hint">Sem dados ainda.</span>';
+    wonders.forEach(function(w){
+      var b=document.createElement("button");
+      b.className="btn chip"+(statFilters.wonders.indexOf(w)!==-1?" active":"");
+      b.textContent=w;
+      b.addEventListener("click", function(){
+        chipToggle(statFilters.wonders, w);
+        renderFilterChips(); renderStats();
+      });
+      wWrap.appendChild(b);
+    });
+
+    var sWrap = document.getElementById("f-side");
+    sWrap.innerHTML="";
+    [["todos","Todos"],["dia","Dia"],["noite","Noite"]].forEach(function(pair){
+      var b=document.createElement("button");
+      b.className="btn chip"+(statFilters.side===pair[0]?" active":"");
+      b.textContent=pair[1];
+      b.addEventListener("click", function(){ statFilters.side=pair[0]; renderFilterChips(); renderStats(); });
+      sWrap.appendChild(b);
+    });
+
+    var cWrap = document.getElementById("f-count");
+    cWrap.innerHTML="";
+    [["todos","Todos"],["3","3"],["4","4"],["5","5"],["6","6"],["7","7"]].forEach(function(pair){
+      var b=document.createElement("button");
+      b.className="btn chip"+(statFilters.count===pair[0]?" active":"");
+      b.textContent=pair[1];
+      b.addEventListener("click", function(){ statFilters.count=pair[0]; renderFilterChips(); renderStats(); });
+      cWrap.appendChild(b);
+    });
+
+    document.getElementById("f-date-from").value = statFilters.from;
+    document.getElementById("f-date-to").value = statFilters.to;
+  }
+  document.getElementById("f-date-from").addEventListener("change", function(e){ statFilters.from=e.target.value; renderStats(); });
+  document.getElementById("f-date-to").addEventListener("change", function(e){ statFilters.to=e.target.value; renderStats(); });
+  document.getElementById("f-clear").addEventListener("click", function(){
+    statFilters = { players:[], wonders:[], side:"todos", count:"todos", from:"", to:"" };
+    renderFilterChips(); renderStats();
+  });
+
+  function getFilteredRows(){
+    var rows = [];
+    matches.forEach(function(m){
+      if(statFilters.from && m.date < statFilters.from) return;
+      if(statFilters.to && m.date > statFilters.to) return;
+      if(statFilters.count!=="todos" && String(m.numPlayers)!==statFilters.count) return;
+      m.players.forEach(function(p){
+        if(statFilters.players.length && statFilters.players.indexOf(p.name)===-1) return;
+        if(statFilters.wonders.length && statFilters.wonders.indexOf(p.wonder)===-1) return;
+        if(statFilters.side!=="todos" && p.side!==statFilters.side) return;
+        rows.push({ match:m, player:p });
+      });
+    });
+    return rows;
+  }
+
+  function avg(arr){ return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }
+  function fmt1(n){ return (Math.round(n*10)/10).toString(); }
+
+  function renderStats(){
+    renderFilterChips();
+    var out = document.getElementById("stats-output");
+    var rows = getFilteredRows();
+
+    if(matches.length===0){
+      out.innerHTML = '<div class="card empty"><span class="glyph">📊</span>Registre partidas para ver estatísticas aqui.</div>';
+      return;
+    }
+    if(rows.length===0){
+      out.innerHTML = '<div class="card empty"><span class="glyph">🔍</span>Nenhuma partida corresponde a esses filtros.</div>';
+      return;
+    }
+
+    var distinctMatches = {};
+    rows.forEach(function(r){ distinctMatches[r.match.id]=true; });
+    var matchCount = Object.keys(distinctMatches).length;
+
+    var totals = rows.map(function(r){return r.player.total;});
+    var maxRow = rows.reduce(function(a,b){return b.player.total>a.player.total?b:a;});
+    var minRow = rows.reduce(function(a,b){return b.player.total<a.player.total?b:a;});
+    var winnerRows = rows.filter(function(r){return r.player.isWinner;});
+    var avgWinner = avg(winnerRows.map(function(r){return r.player.total;}));
+
+    var html = "";
+
+    html += '<div class="stat-grid">';
+    html += statTile("Partidas analisadas", matchCount, rows.length+" registro(s) de jogador");
+    html += statTile("Pontuação média", fmt1(avg(totals)), "");
+    html += statTile("Maior pontuação", maxRow.player.total, esc(maxRow.player.name)+" · "+maxRow.player.wonder+" · "+formatDate(maxRow.match.date));
+    html += statTile("Menor pontuação", minRow.player.total, esc(minRow.player.name)+" · "+minRow.player.wonder+" · "+formatDate(minRow.match.date));
+    html += statTile("Média de quem venceu", winnerRows.length?fmt1(avgWinner):"—", winnerRows.length+" vitória(s) no recorte");
+    html += statTile("Taxa de vitória geral", Math.round(100*winnerRows.length/rows.length)+"%", "das linhas filtradas foram vitórias");
+    html += '</div>';
+
+    // Win rate per player (only meaningful list) -- top winners within filtered rows
+    var winsByPlayer = {}, playedByPlayer = {};
+    rows.forEach(function(r){
+      playedByPlayer[r.player.name] = (playedByPlayer[r.player.name]||0)+1;
+      if(r.player.isWinner) winsByPlayer[r.player.name] = (winsByPlayer[r.player.name]||0)+1;
+    });
+    var playerNames = Object.keys(playedByPlayer);
+    if(playerNames.length){
+      html += '<div class="card"><h3>Taxa de vitória por jogador</h3>';
+      playerNames.sort(function(a,b){
+        var ra=(winsByPlayer[a]||0)/playedByPlayer[a], rb=(winsByPlayer[b]||0)/playedByPlayer[b];
+        return rb-ra;
+      }).forEach(function(name){
+        var w = winsByPlayer[name]||0, p = playedByPlayer[name];
+        var pct = Math.round(100*w/p);
+        html += barRow(name, pct, pct+"% ("+w+"/"+p+")", "var(--accent)");
+      });
+      html += '</div>';
+    }
+
+    // Wonder stats
+    var wonderData = {};
+    rows.forEach(function(r){
+      var w=r.player.wonder;
+      wonderData[w] = wonderData[w]||{played:0,wins:0,totalPts:0};
+      wonderData[w].played++;
+      wonderData[w].totalPts += r.player.total;
+      if(r.player.isWinner) wonderData[w].wins++;
+    });
+    var wonderNames = Object.keys(wonderData);
+    if(wonderNames.length){
+      html += '<div class="card"><h3>Desempenho por maravilha</h3>';
+      wonderNames.sort(function(a,b){ return wonderData[b].wins/wonderData[b].played - wonderData[a].wins/wonderData[a].played; })
+      .forEach(function(w){
+        var d=wonderData[w];
+        var pct = Math.round(100*d.wins/d.played);
+        html += barRow(w, pct, pct+"% vit. · "+fmt1(d.totalPts/d.played)+"pt", "var(--cat-wonder)");
+      });
+      html += '</div>';
+    }
+
+    // Category averages
+    html += '<div class="card"><h3>Pontuação média por categoria</h3>';
+    var catMax = 0;
+    var catAvgs = CATS.map(function(c){
+      var vals = rows.map(function(r){ return r.player[c.key]!==undefined ? r.player[c.key] : 0; });
+      var a = avg(vals);
+      catMax = Math.max(catMax, a);
+      return {label:c.label, val:a, cls:c.cls};
+    });
+    catAvgs.forEach(function(c){
+      var pct = catMax>0 ? (c.val/catMax*100) : 0;
+      html += barRow(c.label, pct, fmt1(c.val)+" pts", "var(--"+c.cls+")", true);
+    });
+    html += '</div>';
+
+    // Day vs Night
+    var dayRows = rows.filter(function(r){return r.player.side==="dia";});
+    var nightRows = rows.filter(function(r){return r.player.side==="noite";});
+    if(dayRows.length && nightRows.length){
+      html += '<div class="card"><h3>Lado Dia vs. Lado Noite</h3>';
+      var dayWin = dayRows.filter(function(r){return r.player.isWinner;}).length;
+      var nightWin = nightRows.filter(function(r){return r.player.isWinner;}).length;
+      html += barRow("Dia · média", avg(dayRows.map(function(r){return r.player.total;})), fmt1(avg(dayRows.map(function(r){return r.player.total;})))+" pts", "var(--cat-treasury)");
+      html += barRow("Noite · média", avg(nightRows.map(function(r){return r.player.total;})), fmt1(avg(nightRows.map(function(r){return r.player.total;})))+" pts", "var(--cat-civil)");
+      html += '<div class="hint" style="margin-top:6px;">Taxa de vitória — Dia: '+Math.round(100*dayWin/dayRows.length)+'% · Noite: '+Math.round(100*nightWin/nightRows.length)+'%</div>';
+      html += '</div>';
+    }
+
+    // Score evolution (only for <=2 selected players)
+    if(statFilters.players.length>=1 && statFilters.players.length<=2){
+      html += '<div class="card"><h3>Evolução de pontuação</h3>' + lineChart(statFilters.players) + '</div>';
+    } else {
+      html += '<div class="card"><h3>Evolução de pontuação</h3><p class="hint">Selecione 1 ou 2 jogadores no filtro acima para ver a evolução da pontuação ao longo das partidas.</p></div>';
+    }
+
+    // Head to head
+    if(statFilters.players.length===2){
+      html += '<div class="card"><h3>Confronto direto</h3>' + headToHead(statFilters.players[0], statFilters.players[1]) + '</div>';
+    }
+
+    out.innerHTML = html;
+  }
+
+  function statTile(label, val, desc){
+    return '<div class="stat-tile"><div class="k">'+esc(label)+'</div><div class="v">'+val+'</div>'+(desc?'<div class="d">'+desc+'</div>':'')+'</div>';
+  }
+
+  function barRow(label, pct, valText, color, clampPct){
+    var width = Math.max(2, Math.min(100, pct));
+    return '<div class="bar-row"><div class="bar-label">'+esc(label)+'</div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+width+'%; background:'+color+';"></div></div>'+
+      '<div class="bar-val">'+valText+'</div></div>';
+  }
+
+  function lineChart(playerNames){
+    var series = playerNames.map(function(name){
+      var pts = [];
+      matches.slice().reverse().forEach(function(m){
+        var p = m.players.filter(function(pp){return pp.name===name;})[0];
+        if(p) pts.push({date:m.date, total:p.total});
+      });
+      return {name:name, pts:pts};
+    }).filter(function(s){return s.pts.length>0;});
+
+    if(!series.length) return '<p class="hint">Sem partidas suficientes para este jogador.</p>';
+
+    var allVals = [];
+    series.forEach(function(s){ s.pts.forEach(function(p){ allVals.push(p.total); }); });
+    var maxV = Math.max.apply(null, allVals), minV = Math.min(0, Math.min.apply(null, allVals));
+    var W=640, H=180, padL=30, padR=10, padT=14, padB=22;
+    var maxLen = Math.max.apply(null, series.map(function(s){return s.pts.length;}));
+
+    function X(i){ return maxLen<=1 ? padL : padL + (i/(maxLen-1))*(W-padL-padR); }
+    function Y(v){ return H-padB - ((v-minV)/(maxV-minV||1))*(H-padT-padB); }
+
+    var colors = ["var(--accent)","var(--cat-civil)"];
+    var svg = '<svg class="linechart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
+    // gridlines
+    for(var g=0; g<=2; g++){
+      var yy = padT + g*(H-padT-padB)/2;
+      svg += '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/>';
+    }
+    series.forEach(function(s, si){
+      var d = s.pts.map(function(p,i){ return (i===0?"M":"L")+X(i)+","+Y(p.total); }).join(" ");
+      svg += '<path d="'+d+'" fill="none" stroke="'+colors[si%colors.length]+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+      s.pts.forEach(function(p,i){
+        svg += '<circle cx="'+X(i)+'" cy="'+Y(p.total)+'" r="3" fill="'+colors[si%colors.length]+'"/>';
+      });
+    });
+    svg += '</svg>';
+
+    var legend = '<div class="legend">'+series.map(function(s,si){
+      return '<div class="legend-item"><span class="legend-dot" style="background:'+colors[si%colors.length]+';"></span>'+esc(s.name)+'</div>';
+    }).join("")+'</div>';
+
+    return svg+legend;
+  }
+
+  function headToHead(nameA, nameB){
+    var together = matches.filter(function(m){
+      var names = m.players.map(function(p){return p.name;});
+      return names.indexOf(nameA)!==-1 && names.indexOf(nameB)!==-1;
+    });
+    if(!together.length) return '<p class="hint">'+esc(nameA)+' e '+esc(nameB)+' ainda não jogaram juntos.</p>';
+    var winsA=0, winsB=0, ptsA=[], ptsB=[];
+    together.forEach(function(m){
+      var pa = m.players.filter(function(p){return p.name===nameA;})[0];
+      var pb = m.players.filter(function(p){return p.name===nameB;})[0];
+      ptsA.push(pa.total); ptsB.push(pb.total);
+      if(pa.total>pb.total) winsA++; else if(pb.total>pa.total) winsB++;
+    });
+    var html = '<div class="h2h-row"><div class="h2h-name">'+esc(nameA)+'</div><div class="h2h-score num">'+winsA+' vitórias · média '+fmt1(avg(ptsA))+'</div></div>';
+    html += '<div class="h2h-row"><div class="h2h-name">'+esc(nameB)+'</div><div class="h2h-score num">'+winsB+' vitórias · média '+fmt1(avg(ptsB))+'</div></div>';
+    html += '<div class="hint" style="margin-top:6px;">'+together.length+' partida(s) em comum'+((together.length-winsA-winsB)>0 ? (" · "+(together.length-winsA-winsB)+" empate(s) entre os dois"):"")+'</div>';
+    return html;
+  }
+
+  renderHistory();
+  renderFilterChips();
+  initPersistence();
+})();
+</script>
+</body>
+</html>
