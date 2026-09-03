@@ -246,6 +246,15 @@
   .side-toggle button{flex:1; border:none; background:var(--surface-2); color:var(--ink-dim); padding:8px 4px; font-size:.82rem; cursor:pointer; font-weight:600;}
   .side-toggle button.active{background:var(--accent); color:var(--accent-ink);}
 
+  .lineup-banner{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:10px 12px; margin-bottom:14px; font-size:.84rem; color:var(--ink-dim); line-height:1.4;
+  }
+  .lineup-banner strong{color:var(--ink);}
+  .shuffle-toolbar{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 0;}
+  .shuffle-toolbar .btn{flex:1 1 auto; white-space:nowrap;}
+
   /* ---------- Ledger ---------- */
   .ledger-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-sm);}
   table.ledger{border-collapse:collapse; width:100%; min-width:640px;}
@@ -422,7 +431,10 @@
         <div class="row" style="justify-content:space-between; margin-bottom:14px;">
           <div class="stepper-count" id="count-buttons"></div>
         </div>
+        <div id="last-lineup-banner" style="display:none;"></div>
         <div id="player-rows"></div>
+        <div class="shuffle-toolbar" id="shuffle-toolbar"></div>
+        <datalist id="known-players"></datalist>
       </div>
 
       <div class="card" id="wizard-card" style="display:none;">
@@ -578,6 +590,8 @@
         matches = snap.docs.map(function(d){ return d.data(); });
         sortMatches();
         refreshActiveView();
+        renderLastLineupBanner();
+        renderKnownPlayersDatalist();
         setSyncBadge("on");
       }, function(err){
         console.error("Falha na sincronização do histórico:", err);
@@ -671,7 +685,7 @@
         '<div class="player-num">'+(i+1)+'</div>'+
         '<div class="player-grid">'+
           '<label class="field">Nome'+
-            '<input type="text" class="p-name" placeholder="Jogador '+(i+1)+'" value="'+esc(data.name)+'">'+
+            '<input type="text" class="p-name" list="known-players" placeholder="Jogador '+(i+1)+'" value="'+esc(data.name)+'">'+
           '</label>'+
           '<label class="field">Maravilha'+
             '<select class="p-wonder"></select>'+
@@ -701,6 +715,76 @@
     }
   }
   renderPlayerRows();
+
+  // ================= SORTEIO (assentos / maravilhas) =================
+  // Fisher-Yates. O lado (Dia/Noite) nunca é sorteado — fica sempre a critério do jogador.
+  function shuffleArray(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+  // Embaralha só os NOMES entre as linhas — maravilha e lado ficam presos à posição (linha).
+  function shuffleSeats(){
+    var rows = document.querySelectorAll("#player-rows .player-row");
+    var names = Array.from(rows).map(function(r){ return r.querySelector(".p-name").value; });
+    var shuffled = shuffleArray(names);
+    rows.forEach(function(r,i){ r.querySelector(".p-name").value = shuffled[i]; });
+  }
+  // Distribui as 7 maravilhas sem repetição entre as linhas atuais — nomes e lado não mudam.
+  function shuffleWonders(){
+    var rows = document.querySelectorAll("#player-rows .player-row");
+    var shuffled = shuffleArray(WONDERS).slice(0, rows.length);
+    rows.forEach(function(r,i){ r.querySelector(".p-wonder").value = shuffled[i]; });
+  }
+  function renderShuffleToolbar(){
+    var wrap = document.getElementById("shuffle-toolbar");
+    wrap.innerHTML =
+      '<button type="button" class="btn small" id="btn-shuffle-seats">🎲 Sortear assentos</button>'+
+      '<button type="button" class="btn small" id="btn-shuffle-wonders">🎲 Sortear maravilhas</button>'+
+      '<button type="button" class="btn small" id="btn-shuffle-both">🎲 Sortear ambos</button>';
+    document.getElementById("btn-shuffle-seats").addEventListener("click", shuffleSeats);
+    document.getElementById("btn-shuffle-wonders").addEventListener("click", shuffleWonders);
+    document.getElementById("btn-shuffle-both").addEventListener("click", function(){ shuffleSeats(); shuffleWonders(); });
+  }
+  renderShuffleToolbar();
+
+  // ================= LEMBRAR JOGADORES (a partir do histórico compartilhado) =================
+  function renderKnownPlayersDatalist(){
+    var dl = document.getElementById("known-players");
+    if(!dl) return;
+    dl.innerHTML = allPlayerNames().map(function(n){ return '<option value="'+esc(n)+'"></option>'; }).join("");
+  }
+  function renderLastLineupBanner(){
+    var el = document.getElementById("last-lineup-banner");
+    if(!el) return;
+    if(!matches.length){ el.style.display="none"; el.innerHTML=""; return; }
+    var last = matches[0];
+    var names = last.players.map(function(p){ return p.name; }).join(", ");
+    el.className = "lineup-banner";
+    el.style.display = "flex";
+    el.innerHTML =
+      '<span>Última turma ('+last.numPlayers+' jogadores): <strong>'+esc(names)+'</strong></span>'+
+      '<button type="button" class="btn small" id="btn-use-last-lineup">Usar esses jogadores</button>';
+    document.getElementById("btn-use-last-lineup").addEventListener("click", useLastLineup);
+  }
+  function useLastLineup(){
+    if(!matches.length) return;
+    var last = matches[0];
+    numPlayers = last.numPlayers;
+    document.querySelectorAll(".count-btn").forEach(function(c){
+      c.classList.toggle("active", parseInt(c.textContent,10)===numPlayers);
+    });
+    renderPlayerRows();
+    var rows = document.querySelectorAll("#player-rows .player-row");
+    rows.forEach(function(r,i){
+      if(last.players[i]) r.querySelector(".p-name").value = last.players[i].name;
+    });
+    document.getElementById("wizard-card").style.display="none";
+    document.getElementById("podium-card").style.display="none";
+  }
 
   // Botão "Iniciar pontuação" (mantido dinâmico para preservar a estrutura original)
   var buildBtnHolder = document.createElement("div");
@@ -1297,6 +1381,8 @@
 
   renderHistory();
   renderFilterChips();
+  renderLastLineupBanner();
+  renderKnownPlayersDatalist();
   initPersistence();
 })();
 </script>
