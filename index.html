@@ -397,6 +397,12 @@
   .legend-item{display:flex; align-items:center; gap:5px; font-size:.72rem; color:var(--ink-dim);}
   .legend-dot{width:9px; height:9px; border-radius:2px; flex-shrink:0;}
 
+  .record-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line);}
+  .record-row:last-child{border-bottom:none;}
+  .record-row .cat{flex:1; font-size:.82rem; color:var(--ink-dim);}
+  .record-row .val{font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--ink); font-size:.86rem; flex-shrink:0;}
+  .record-row .who{font-size:.76rem; color:var(--ink-dim); text-align:right; max-width:42%; flex-shrink:0;}
+
   @media (min-width:600px){
     .stat-grid{grid-template-columns:1fr 1fr 1fr;}
     .player-grid{grid-template-columns:1fr 1fr 1fr;}
@@ -1241,6 +1247,44 @@
       html += '</div>';
     }
 
+    // Recordes pessoais por jogador (melhor / pior / média) — três rankings separados
+    var byPlayer = {};
+    rows.forEach(function(r){
+      var n = r.player.name;
+      if(!byPlayer[n]) byPlayer[n] = {name:n, best:r, worst:r, sum:0, count:0};
+      var agg = byPlayer[n];
+      if(r.player.total>agg.best.player.total) agg.best = r;
+      if(r.player.total<agg.worst.player.total) agg.worst = r;
+      agg.sum += r.player.total;
+      agg.count++;
+    });
+    var playerAggs = Object.keys(byPlayer).map(function(k){ return byPlayer[k]; });
+    if(playerAggs.length){
+      var maxBest = Math.max.apply(null, playerAggs.map(function(a){return a.best.player.total;}));
+      html += '<div class="card"><h3>Maior pontuação por jogador</h3>';
+      playerAggs.slice().sort(function(a,b){return b.best.player.total-a.best.player.total;}).forEach(function(a){
+        var p = a.best.player;
+        html += barRow(a.name, maxBest>0?(p.total/maxBest*100):0, p.total+" · "+p.wonder+" · "+(p.side==="dia"?"Dia":"Noite"), "var(--good)");
+      });
+      html += '</div>';
+
+      var maxWorst = Math.max.apply(null, playerAggs.map(function(a){return a.worst.player.total;}));
+      html += '<div class="card"><h3>Menor pontuação por jogador</h3>';
+      playerAggs.slice().sort(function(a,b){return a.worst.player.total-b.worst.player.total;}).forEach(function(a){
+        var p = a.worst.player;
+        html += barRow(a.name, maxWorst>0?(p.total/maxWorst*100):0, p.total+" · "+p.wonder+" · "+(p.side==="dia"?"Dia":"Noite"), "var(--bad)");
+      });
+      html += '</div>';
+
+      var playerAvgs = playerAggs.map(function(a){ return {name:a.name, avg:a.sum/a.count}; });
+      var maxPlayerAvg = Math.max.apply(null, playerAvgs.map(function(a){return a.avg;}));
+      html += '<div class="card"><h3>Pontuação média por jogador</h3>';
+      playerAvgs.sort(function(a,b){return b.avg-a.avg;}).forEach(function(a){
+        html += barRow(a.name, maxPlayerAvg>0?(a.avg/maxPlayerAvg*100):0, fmt1(a.avg)+" pts", "var(--accent)");
+      });
+      html += '</div>';
+    }
+
     // Wonder stats
     var wonderData = {};
     rows.forEach(function(r){
@@ -1274,6 +1318,24 @@
     catAvgs.forEach(function(c){
       var pct = catMax>0 ? (c.val/catMax*100) : 0;
       html += barRow(c.label, pct, fmt1(c.val)+" pts", "var(--"+c.cls+")", true);
+    });
+    html += '</div>';
+
+    // Recordes por categoria — quem já fez a maior pontuação individual em cada seção
+    html += '<div class="card"><h3>Recordes por categoria</h3>';
+    CATS.forEach(function(c){
+      var maxVal = Math.max.apply(null, rows.map(function(r){ return r.player[c.key]!==undefined ? r.player[c.key] : 0; }));
+      var holders = [];
+      rows.forEach(function(r){
+        var v = r.player[c.key]!==undefined ? r.player[c.key] : 0;
+        if(v===maxVal && holders.indexOf(r.player.name)===-1) holders.push(r.player.name);
+      });
+      html += '<div class="record-row">'+
+        '<span class="legend-dot" style="background:var(--'+c.cls+');"></span>'+
+        '<span class="cat">'+c.short+'</span>'+
+        '<span class="val">'+maxVal+' pts</span>'+
+        '<span class="who">'+esc(holders.join(", "))+'</span>'+
+      '</div>';
     });
     html += '</div>';
 
