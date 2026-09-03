@@ -262,23 +262,27 @@
     content:""; position:absolute; top:0; right:0; bottom:0; width:26px;
     pointer-events:none; background:linear-gradient(to right, transparent, var(--surface) 80%);
   }
-  table.ledger{border-collapse:collapse; width:100%; min-width:640px;}
-  table.ledger th, table.ledger td{padding:8px 8px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap;}
+  table.ledger{border-collapse:collapse; width:100%; min-width:640px; table-layout:fixed;}
+  table.ledger th, table.ledger td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; overflow:hidden;}
   @media (max-width:480px){
     table.ledger{min-width:0;}
-    table.ledger th, table.ledger td{padding:6px 5px; font-size:.78rem;}
-    table.ledger td.name-cell, table.ledger th.name-cell{min-width:64px; padding-left:6px;}
+    table.ledger th, table.ledger td{padding:5px 2px; font-size:.76rem;}
+    table.ledger td.name-cell, table.ledger th.name-cell{min-width:92px; width:92px; padding-left:5px;}
+    table.ledger th.cat-icon{font-size:1rem;}
   }
+  table.ledger td.name-cell .hint{white-space:normal; line-height:1.25; font-size:.72rem; margin-top:1px;}
   table.ledger th{
     font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--surface);
     font-weight:700; padding-top:10px; padding-bottom:10px;
   }
+  table.ledger th.cat-icon{font-size:1.15rem; letter-spacing:0; text-transform:none; line-height:1;}
+  table.ledger th.pts-head, table.ledger td.total-cell{background:var(--surface-3); color:var(--ink);}
   table.ledger th .cat-name{display:block;}
-  table.ledger td.name-cell{text-align:left; font-weight:600; position:sticky; left:0; background:var(--surface); min-width:104px;}
+  table.ledger td.name-cell{text-align:left; font-weight:600; position:sticky; left:0; background:var(--surface); min-width:88px; width:88px;}
   table.ledger th.name-cell{position:sticky; left:0; background:var(--ink); text-align:left; padding-left:10px;}
   table.ledger tr:last-child td{border-bottom:none;}
   table.ledger td input[type=number]{width:56px; text-align:center; padding:6px 4px;}
-  table.ledger td.total-cell{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:1rem; color:var(--ink);}
+  table.ledger td.total-cell{font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:1rem;}
   table.ledger tfoot td{font-weight:700; background:var(--surface-2);}
   .sci-inputs{display:flex; gap:3px; justify-content:center;}
   .sci-inputs input{width:32px; padding:5px 2px;}
@@ -338,7 +342,6 @@
 
   .wizard-nav{justify-content:space-between;}
 
-  .summary-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-sm);}
 
   /* ---------- Podium ---------- */
   .podium-item{
@@ -543,19 +546,19 @@
   var WONDERS = ["Gizé","Babilônia","Olímpia","Rodes","Éfeso","Alexandria","Halicarnasso"];
   // Ordem e regras conforme a caderneta oficial de pontuação (7 Wonders, 2ª edição)
   var CATS = [
-    {key:"wonderPts", label:"Maravilha", short:"Maravilha", cls:"cat-wonder", type:"number",
+    {key:"wonderPts", label:"Maravilha", short:"Maravilha", icon:"🏛️", cls:"cat-wonder", type:"number",
       rule:"Some os pontos de vitória de todos os estágios construídos da sua Maravilha."},
-    {key:"treasury", label:"Tesouro", short:"Tesouro", cls:"cat-treasury", type:"coins",
+    {key:"treasury", label:"Tesouro", short:"Tesouro", icon:"🪙", cls:"cat-treasury", type:"coins",
       rule:"Receba 1 ponto de vitória para cada conjunto completo de 3 Moedas no seu Tesouro."},
-    {key:"military", label:"Conflitos Militares", short:"Militar", cls:"cat-military", type:"number",
+    {key:"military", label:"Conflitos Militares", short:"Militar", icon:"⚔️", cls:"cat-military", type:"number",
       rule:"Some o valor de todas as suas fichas de Derrota e Vitória Militar. O total pode ser negativo."},
-    {key:"civil", label:"Cartas Azuis", short:"Civil", cls:"cat-civil", type:"number",
+    {key:"civil", label:"Cartas Azuis", short:"Civil", icon:"🏺", cls:"cat-civil", type:"number",
       rule:"Some os pontos de vitória impressos nas Cartas Azuis (Estruturas Civis) da sua Cidade."},
-    {key:"commerce", label:"Cartas Amarelas", short:"Comércio", cls:"cat-commerce", type:"number",
+    {key:"commerce", label:"Cartas Amarelas", short:"Comércio", icon:"💰", cls:"cat-commerce", type:"number",
       rule:"Some os pontos de vitória das Cartas Amarelas (Estruturas Comerciais), conforme o efeito de cada uma."},
-    {key:"science", label:"Cartas Verdes", short:"Ciência", cls:"cat-science", type:"science",
+    {key:"science", label:"Cartas Verdes", short:"Ciência", icon:"⚙️", cls:"cat-science", type:"science",
       rule:"Símbolos idênticos valem o quadrado da quantidade (1, 4, 9, 16, 25, 36…). Cada conjunto completo de 3 símbolos diferentes vale +7 pontos — as duas parcelas se somam."},
-    {key:"guild", label:"Cartas Roxas", short:"Guildas", cls:"cat-guild", type:"number",
+    {key:"guild", label:"Cartas Roxas", short:"Guildas", icon:"🏅", cls:"cat-guild", type:"number",
       rule:"Some os pontos de vitória das Cartas Roxas (Guildas), conforme o efeito de cada uma."}
   ];
 
@@ -965,13 +968,15 @@
       '<h2 class="wizard-step-title"><span class="of">Etapa '+(CATS.length+1)+' de '+(CATS.length+1)+'</span>Resumo</h2>'+
     '</div>';
     html += '<p class="wizard-rule">Confira os pontos de cada seção antes de salvar. Toque em "Voltar" para corrigir alguma etapa.</p>';
-    html += '<div class="summary-wrap"><table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
-      CATS.map(function(c){return '<th class="'+c.cls+'">'+c.short+'</th>';}).join("")+
-      '<th style="background:var(--ink);">Total</th></tr></thead><tbody>';
+    html += '<div class="ledger-wrap"><table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
+      '<th class="pts-head">PTS</th>'+
+      CATS.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
+      '</tr></thead><tbody>';
     wizard.entries.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(e){
       html += '<tr><td class="name-cell">'+esc(e.name)+(e.total===maxTotal?" 🏆":"")+'<div class="hint">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></td>'+
+        '<td class="total-cell">'+e.total+'</td>'+
         CATS.map(function(c){return '<td>'+e[c.key]+'</td>';}).join("")+
-        '<td class="total-cell">'+e.total+'</td></tr>';
+        '</tr>';
     });
     html += '</tbody></table></div>';
     return html;
@@ -1108,12 +1113,14 @@
   function buildDetailTable(m){
     var sorted = m.players.slice().sort(function(a,b){return b.total-a.total;});
     var head = '<table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
-      CATS.map(function(c){return '<th class="'+c.cls+'">'+c.short+'</th>';}).join("")+
-      '<th style="background:var(--ink);">Total</th></tr></thead><tbody>';
+      '<th class="pts-head">PTS</th>'+
+      CATS.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
+      '</tr></thead><tbody>';
     var body = sorted.map(function(p){
       return '<tr><td class="name-cell">'+esc(p.name)+(p.isWinner?" 🏆":"")+'<div class="hint">'+p.wonder+' · '+(p.side==="dia"?"Dia":"Noite")+'</div></td>'+
+        '<td class="total-cell">'+p.total+'</td>'+
         CATS.map(function(c){return '<td>'+p[c.key]+'</td>';}).join("")+
-        '<td class="total-cell">'+p.total+'</td></tr>';
+        '</tr>';
     }).join("");
     return head+body+'</tbody></table>';
   }
