@@ -325,13 +325,26 @@
     width:76px; text-align:center; font-size:1.05rem; padding:9px 6px;
   }
   .wiz-pts-preview{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--step-color, var(--accent)); font-weight:700; min-width:52px; text-align:right;}
-  .sign-toggle{width:84px; flex-shrink:0;}
-  .sign-toggle .wiz-sign{font-size:1.1rem; font-weight:700; padding:9px 4px;}
 
-  .sci-cols{display:flex; align-items:flex-end; gap:8px;}
+  /* Setinhas ▲▼ clicáveis para todo input numérico do assistente (equivalente ao spinner nativo do PC) */
+  .num-stepper{position:relative; display:inline-flex; flex-shrink:0;}
+  .num-stepper .wiz-input{padding-right:20px !important;}
+  .wiz-input::-webkit-inner-spin-button, .wiz-input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .wiz-input{-moz-appearance:textfield;}
+  .stepper-arrows{position:absolute; right:1px; top:1px; bottom:1px; width:18px; display:flex; flex-direction:column;}
+  .stepper-arrows .step-arrow{
+    flex:1; border:none; background:var(--surface-3); color:var(--ink-dim);
+    font-size:.5rem; line-height:1; padding:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stepper-arrows .step-arrow:first-child{border-top-right-radius:7px;}
+  .stepper-arrows .step-arrow:last-child{border-bottom-right-radius:7px; border-top:1px solid var(--line-strong);}
+  .stepper-arrows .step-arrow:active{background:var(--accent); color:var(--accent-ink);}
+
+  .sci-cols{display:flex; align-items:flex-end; gap:6px;}
   .sci-col{display:flex; flex-direction:column; align-items:center; gap:4px;}
   .sci-col label{font-size:.64rem; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); font-weight:700;}
-  .sci-col input{width:46px; text-align:center; padding:8px 2px; font-size:.95rem;}
+  .sci-col input{width:56px; text-align:center; padding:8px 2px; font-size:.95rem;}
   .sci-col.computed{color:var(--ink-dim);}
   .sci-col.computed .sci-computed-val{
     width:46px; height:37px; display:flex; align-items:center; justify-content:center;
@@ -339,8 +352,8 @@
   }
   .sci-plus{font-size:1rem; color:var(--ink-faint); padding-bottom:8px;}
   .sci-breakdown{flex-basis:100%; font-size:.74rem; color:var(--ink-dim); margin-top:6px;}
-  .sci-wild-row{margin-top:8px; display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--ink-dim);}
-  .sci-wild-row input{width:46px; text-align:center; padding:5px 2px;}
+  .sci-wild-row{margin-top:8px; display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--ink-dim); flex-wrap:wrap;}
+  .sci-wild-row input{width:56px; text-align:center; padding:5px 2px;}
 
   .wizard-nav{justify-content:space-between;}
 
@@ -552,7 +565,7 @@
       rule:"Some os pontos de vitória de todos os estágios construídos da sua Maravilha."},
     {key:"treasury", label:"Tesouro", short:"Tesouro", icon:"🪙", cls:"cat-treasury", type:"coins",
       rule:"Receba 1 ponto de vitória para cada conjunto completo de 3 Moedas no seu Tesouro."},
-    {key:"military", label:"Conflitos Militares", short:"Militar", icon:"⚔️", cls:"cat-military", type:"signed",
+    {key:"military", label:"Conflitos Militares", short:"Militar", icon:"⚔️", cls:"cat-military", type:"number",
       rule:"Some o valor de todas as suas fichas de Derrota e Vitória Militar. O total pode ser negativo."},
     {key:"civil", label:"Cartas Azuis", short:"Civil", icon:"🏺", cls:"cat-civil", type:"number",
       rule:"Some os pontos de vitória impressos nas Cartas Azuis (Estruturas Civis) da sua Cidade."},
@@ -897,32 +910,24 @@
         html += '<div class="wiz-player-id"><div class="wiz-player-name">'+esc(e.name)+'</div><div class="wiz-player-sub">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></div>';
 
         if(cat.type==="number"){
-          html += '<div class="wiz-input-area"><input type="number" class="wiz-input" data-key="'+cat.key+'" value="'+e[cat.key]+'" step="1"></div>';
-        } else if(cat.type==="signed"){
-          var isNeg = e[cat.key]<0, mag = Math.abs(e[cat.key]);
-          html += '<div class="wiz-input-area">'+
-            '<div class="side-toggle sign-toggle">'+
-              '<button type="button" class="wiz-sign'+(!isNeg?' active':'')+'" data-sign="1">+</button>'+
-              '<button type="button" class="wiz-sign'+(isNeg?' active':'')+'" data-sign="-1">−</button>'+
-            '</div>'+
-            '<input type="number" class="wiz-input" data-key="'+cat.key+'" data-magnitude="1" min="0" value="'+mag+'" step="1">'+
-          '</div>';
+          var numMin = (cat.key==="military") ? "" : ' min="0"';
+          html += '<div class="wiz-input-area">'+numStepper('<input type="number" class="wiz-input" data-key="'+cat.key+'" value="'+e[cat.key]+'" step="1"'+numMin+'>')+'</div>';
         } else if(cat.type==="coins"){
           html += '<div class="wiz-input-area">'+
-            '<input type="number" class="wiz-input" data-key="coins" min="0" value="'+e.coins+'" step="1">'+
+            numStepper('<input type="number" class="wiz-input" data-key="coins" min="0" value="'+e.coins+'" step="1">')+
             '<span class="wiz-pts-preview" data-preview="treasury" style="color:'+color+';">'+Math.floor(e.coins/3)+' pts</span>'+
           '</div>';
         } else if(cat.type==="science"){
           html += '<div style="flex-basis:100%;"><div class="sci-cols">'+
-            '<div class="sci-col"><label>Bússola</label><input type="number" class="wiz-input" data-key="sciC" min="0" value="'+e.sciC+'"></div>'+
-            '<div class="sci-col"><label>Tábua</label><input type="number" class="wiz-input" data-key="sciT" min="0" value="'+e.sciT+'"></div>'+
-            '<div class="sci-col"><label>Roda</label><input type="number" class="wiz-input" data-key="sciG" min="0" value="'+e.sciG+'"></div>'+
+            '<div class="sci-col"><label>Bússola</label>'+numStepper('<input type="number" class="wiz-input" data-key="sciC" min="0" value="'+e.sciC+'">')+'</div>'+
+            '<div class="sci-col"><label>Tábua</label>'+numStepper('<input type="number" class="wiz-input" data-key="sciT" min="0" value="'+e.sciT+'">')+'</div>'+
+            '<div class="sci-col"><label>Roda</label>'+numStepper('<input type="number" class="wiz-input" data-key="sciG" min="0" value="'+e.sciG+'">')+'</div>'+
             '<div class="sci-plus">+</div>'+
             '<div class="sci-col computed"><label>Conjuntos</label><div class="sci-computed-val" data-computed-sets>0</div></div>'+
             '<div class="sci-plus">=</div>'+
             '<div class="sci-col computed"><label>Pontos</label><div class="sci-computed-val" data-computed-pts style="color:'+color+';">0</div></div>'+
           '</div>'+
-          '<div class="sci-wild-row">Símbolos livres (ex.: Guilda dos Cientistas): <input type="number" class="wiz-input" data-key="sciW" min="0" value="'+e.sciW+'"></div>'+
+          '<div class="sci-wild-row">Símbolos livres (ex.: Guilda dos Cientistas): '+numStepper('<input type="number" class="wiz-input" data-key="sciW" min="0" value="'+e.sciW+'">')+'</div>'+
           '<div class="sci-breakdown" data-breakdown></div>'+
           '</div>';
         }
@@ -941,19 +946,24 @@
     }
   }
 
+  // Envolve um <input type="number"> com setinhas ▲▼ clicáveis, iguais ao spinner nativo do PC
+  // (que o Chrome/Android mobile não mostra). Usado em todos os campos numéricos do assistente.
+  function numStepper(inputHtml){
+    return '<span class="num-stepper">'+inputHtml+
+      '<span class="stepper-arrows">'+
+        '<button type="button" class="step-arrow" data-step="1" tabindex="-1" aria-label="Aumentar">▲</button>'+
+        '<button type="button" class="step-arrow" data-step="-1" tabindex="-1" aria-label="Diminuir">▼</button>'+
+      '</span>'+
+    '</span>';
+  }
+
   function wireStepInputs(cat){
     var rows = document.querySelectorAll("#wizard-body .wiz-player-row");
     rows.forEach(function(row){
       var idx = parseInt(row.dataset.idx,10);
       row.querySelectorAll(".wiz-input").forEach(function(input){
         input.addEventListener("input", function(){
-          if(input.dataset.magnitude){
-            var activeSign = row.querySelector(".wiz-sign.active");
-            var sign = activeSign ? parseInt(activeSign.dataset.sign,10) : 1;
-            wizard.entries[idx][input.dataset.key] = sign * numval(input);
-          } else {
-            wizard.entries[idx][input.dataset.key] = numval(input);
-          }
+          wizard.entries[idx][input.dataset.key] = numval(input);
           if(cat.type==="coins"){
             wizard.entries[idx].treasury = Math.floor(wizard.entries[idx].coins/3);
             row.querySelector('[data-preview="treasury"]').textContent = wizard.entries[idx].treasury+" pts";
@@ -962,13 +972,15 @@
           }
         });
       });
-      // Alternador +/- : troca o sinal sem precisar de tecla de menos no teclado numérico do celular
-      row.querySelectorAll(".wiz-sign").forEach(function(btn){
+      row.querySelectorAll(".step-arrow").forEach(function(btn){
         btn.addEventListener("click", function(){
-          row.querySelectorAll(".wiz-sign").forEach(function(b){ b.classList.remove("active"); });
-          btn.classList.add("active");
-          var magInput = row.querySelector(".wiz-input[data-magnitude]");
-          wizard.entries[idx][magInput.dataset.key] = parseInt(btn.dataset.sign,10) * numval(magInput);
+          var input = btn.closest(".num-stepper").querySelector(".wiz-input");
+          var step = parseInt(btn.dataset.step,10);
+          var next = numval(input)+step;
+          var min = input.getAttribute("min");
+          if(min!==null && next<parseInt(min,10)) next = parseInt(min,10);
+          input.value = next;
+          input.dispatchEvent(new Event("input", {bubbles:true}));
         });
       });
       if(cat.type==="science") updateScienceRow(row, wizard.entries[idx]);
