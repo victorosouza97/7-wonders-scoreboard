@@ -325,6 +325,8 @@
     width:76px; text-align:center; font-size:1.05rem; padding:9px 6px;
   }
   .wiz-pts-preview{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--step-color, var(--accent)); font-weight:700; min-width:52px; text-align:right;}
+  .sign-toggle{width:84px; flex-shrink:0;}
+  .sign-toggle .wiz-sign{font-size:1.1rem; font-weight:700; padding:9px 4px;}
 
   .sci-cols{display:flex; align-items:flex-end; gap:8px;}
   .sci-col{display:flex; flex-direction:column; align-items:center; gap:4px;}
@@ -550,7 +552,7 @@
       rule:"Some os pontos de vitória de todos os estágios construídos da sua Maravilha."},
     {key:"treasury", label:"Tesouro", short:"Tesouro", icon:"🪙", cls:"cat-treasury", type:"coins",
       rule:"Receba 1 ponto de vitória para cada conjunto completo de 3 Moedas no seu Tesouro."},
-    {key:"military", label:"Conflitos Militares", short:"Militar", icon:"⚔️", cls:"cat-military", type:"number",
+    {key:"military", label:"Conflitos Militares", short:"Militar", icon:"⚔️", cls:"cat-military", type:"signed",
       rule:"Some o valor de todas as suas fichas de Derrota e Vitória Militar. O total pode ser negativo."},
     {key:"civil", label:"Cartas Azuis", short:"Civil", icon:"🏺", cls:"cat-civil", type:"number",
       rule:"Some os pontos de vitória impressos nas Cartas Azuis (Estruturas Civis) da sua Cidade."},
@@ -896,6 +898,15 @@
 
         if(cat.type==="number"){
           html += '<div class="wiz-input-area"><input type="number" class="wiz-input" data-key="'+cat.key+'" value="'+e[cat.key]+'" step="1"></div>';
+        } else if(cat.type==="signed"){
+          var isNeg = e[cat.key]<0, mag = Math.abs(e[cat.key]);
+          html += '<div class="wiz-input-area">'+
+            '<div class="side-toggle sign-toggle">'+
+              '<button type="button" class="wiz-sign'+(!isNeg?' active':'')+'" data-sign="1">+</button>'+
+              '<button type="button" class="wiz-sign'+(isNeg?' active':'')+'" data-sign="-1">−</button>'+
+            '</div>'+
+            '<input type="number" class="wiz-input" data-key="'+cat.key+'" data-magnitude="1" min="0" value="'+mag+'" step="1">'+
+          '</div>';
         } else if(cat.type==="coins"){
           html += '<div class="wiz-input-area">'+
             '<input type="number" class="wiz-input" data-key="coins" min="0" value="'+e.coins+'" step="1">'+
@@ -936,13 +947,28 @@
       var idx = parseInt(row.dataset.idx,10);
       row.querySelectorAll(".wiz-input").forEach(function(input){
         input.addEventListener("input", function(){
-          wizard.entries[idx][input.dataset.key] = numval(input);
+          if(input.dataset.magnitude){
+            var activeSign = row.querySelector(".wiz-sign.active");
+            var sign = activeSign ? parseInt(activeSign.dataset.sign,10) : 1;
+            wizard.entries[idx][input.dataset.key] = sign * numval(input);
+          } else {
+            wizard.entries[idx][input.dataset.key] = numval(input);
+          }
           if(cat.type==="coins"){
             wizard.entries[idx].treasury = Math.floor(wizard.entries[idx].coins/3);
             row.querySelector('[data-preview="treasury"]').textContent = wizard.entries[idx].treasury+" pts";
           } else if(cat.type==="science"){
             updateScienceRow(row, wizard.entries[idx]);
           }
+        });
+      });
+      // Alternador +/- : troca o sinal sem precisar de tecla de menos no teclado numérico do celular
+      row.querySelectorAll(".wiz-sign").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          row.querySelectorAll(".wiz-sign").forEach(function(b){ b.classList.remove("active"); });
+          btn.classList.add("active");
+          var magInput = row.querySelector(".wiz-input[data-magnitude]");
+          wizard.entries[idx][magInput.dataset.key] = parseInt(btn.dataset.sign,10) * numval(magInput);
         });
       });
       if(cat.type==="science") updateScienceRow(row, wizard.entries[idx]);
