@@ -30,6 +30,8 @@
     --cat-science:#3F7A5E;
     --cat-guild:#6C4179;
     --cat-wonder:#6E6858;
+    --cat-leaders:#1F6B6B;
+    --cat-cities:#3B3B3B;
 
     --good:#3F7D4F;
     --bad:#B23A34;
@@ -61,6 +63,8 @@
       --cat-science:#79C09A;
       --cat-guild:#B58BC6;
       --cat-wonder:#B3AB95;
+      --cat-leaders:#5FC9C9;
+      --cat-cities:#B8B2A5;
 
       --good:#6FBE81;
       --bad:#E2695F;
@@ -294,6 +298,8 @@
   th.cat-guild{background:var(--cat-guild);}
   th.cat-wonder{background:var(--cat-wonder);}
   th.cat-science{background:var(--cat-science);}
+  th.cat-leaders{background:var(--cat-leaders);}
+  th.cat-cities{background:var(--cat-cities);}
 
   .save-bar{display:flex; justify-content:flex-end; gap:8px;}
 
@@ -466,6 +472,14 @@
         <div class="row" style="justify-content:space-between; margin-bottom:14px;">
           <div class="stepper-count" id="count-buttons"></div>
         </div>
+        <div class="filter-group" style="margin-bottom:14px;">
+          <div class="filter-label">Expansões (opcional)</div>
+          <div class="chip-row" id="expansion-toggles">
+            <button type="button" class="btn chip" data-exp="leaders">👑 Líderes</button>
+            <button type="button" class="btn chip" data-exp="cities">🏙️ Cidades</button>
+          </div>
+          <div class="hint" style="margin-top:4px;">Os pontos de cada expansão ativada entram como total manual (uma coluna extra na pontuação), já que cada carta tem um efeito próprio e não há fórmula única.</div>
+        </div>
         <div id="last-lineup-banner" style="display:none;"></div>
         <div id="player-rows"></div>
         <div class="shuffle-toolbar" id="shuffle-toolbar"></div>
@@ -576,9 +590,18 @@
     {key:"guild", label:"Cartas Roxas", short:"Guildas", icon:"🏅", cls:"cat-guild", type:"number",
       rule:"Some os pontos de vitória das Cartas Roxas (Guildas), conforme o efeito de cada uma."}
   ];
+  // Expansões: cada carta de Líder/Cidade tem efeito próprio (não há fórmula oficial única),
+  // então o lançamento é um total manual — mesmo padrão de campo numérico das demais categorias.
+  var EXPANSION_CATS = [
+    {key:"leaders", label:"Líderes", short:"Líderes", icon:"👑", cls:"cat-leaders", type:"number", expansion:"leaders",
+      rule:"Expansão Líderes: some o total de pontos de vitória obtidos pelos efeitos dos seus Líderes recrutados (consulte o efeito de cada carta/bloco de pontuação)."},
+    {key:"cities", label:"Cidades", short:"Cidades", icon:"🏙️", cls:"cat-cities", type:"number", expansion:"cities",
+      rule:"Expansão Cidades: some o total de pontos de vitória das suas Cartas Pretas, conforme o efeito de cada uma."}
+  ];
 
   var matches = [];
   var numPlayers = 4;
+  var activeExpansions = {leaders:false, cities:false};
   var statFilters = { players:[], wonders:[], side:"todos", count:"todos", from:"", to:"" };
 
   // ---------------- Persistência: histórico compartilhado via Firestore ----------------
@@ -774,23 +797,79 @@
     var shuffled = shuffleArray(names);
     rows.forEach(function(r,i){ r.querySelector(".p-name").value = shuffled[i]; });
   }
+  // Maravilhas já usadas por cada jogador HOJE (mesma sessão/dia), a partir do histórico compartilhado.
+  function wondersUsedTodayByPlayer(){
+    var map = {};
+    var today = todayISO();
+    matches.forEach(function(m){
+      if(m.date!==today) return;
+      m.players.forEach(function(p){
+        var name = (p.name||"").trim();
+        if(!name) return;
+        if(!map[name]) map[name]=[];
+        if(map[name].indexOf(p.wonder)===-1) map[name].push(p.wonder);
+      });
+    });
+    return map;
+  }
+  // Backtracking aleatorizado: tenta achar uma atribuição onde ninguém repete maravilha do dia;
+  // se for matematicamente impossível (muitas partidas já jogadas), cede e permite repetição.
+  function tryAssignWondersAvoidingRepeats(names, usedTodayMap){
+    var pool = shuffleArray(WONDERS);
+    var count = names.length;
+    var assignment = new Array(count).fill(null);
+    var takenWonder = {};
+    function backtrack(i){
+      if(i===count) return true;
+      var avoid = usedTodayMap[names[i]] || [];
+      var candidates = pool.filter(function(w){ return !takenWonder[w]; });
+      var preferred = shuffleArray(candidates.filter(function(w){ return avoid.indexOf(w)===-1; }));
+      var fallback = shuffleArray(candidates.filter(function(w){ return avoid.indexOf(w)!==-1; }));
+      var order = preferred.concat(fallback);
+      for(var k=0;k<order.length;k++){
+        var w = order[k];
+        takenWonder[w]=true; assignment[i]=w;
+        if(backtrack(i+1)) return true;
+        takenWonder[w]=false; assignment[i]=null;
+      }
+      return false;
+    }
+    return backtrack(0) ? assignment : null;
+  }
   // Distribui as 7 maravilhas sem repetição entre as linhas atuais — nomes e lado não mudam.
+  // Com "não repetir hoje" marcado, evita dar a um jogador uma maravilha que ele já jogou nesta
+  // mesma sessão (mesmo dia-calendário); se não houver combinação possível, cede e repete.
   function shuffleWonders(){
     var rows = document.querySelectorAll("#player-rows .player-row");
-    var shuffled = shuffleArray(WONDERS).slice(0, rows.length);
-    rows.forEach(function(r,i){ r.querySelector(".p-wonder").value = shuffled[i]; });
+    var names = Array.from(rows).map(function(r){ return r.querySelector(".p-name").value.trim(); });
+    var chk = document.getElementById("chk-no-repeat-wonder");
+    var avoidRepeat = chk ? chk.checked : false;
+    var usedToday = avoidRepeat ? wondersUsedTodayByPlayer() : {};
+    var assignment = (avoidRepeat && tryAssignWondersAvoidingRepeats(names, usedToday)) || shuffleArray(WONDERS).slice(0, rows.length);
+    rows.forEach(function(r,i){ r.querySelector(".p-wonder").value = assignment[i]; });
   }
   function renderShuffleToolbar(){
     var wrap = document.getElementById("shuffle-toolbar");
     wrap.innerHTML =
       '<button type="button" class="btn small" id="btn-shuffle-seats">🎲 Sortear assentos</button>'+
       '<button type="button" class="btn small" id="btn-shuffle-wonders">🎲 Sortear maravilhas</button>'+
-      '<button type="button" class="btn small" id="btn-shuffle-both">🎲 Sortear ambos</button>';
+      '<button type="button" class="btn small" id="btn-shuffle-both">🎲 Sortear ambos</button>'+
+      '<label style="display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--ink-dim); flex-basis:100%; margin-top:6px;">'+
+        '<input type="checkbox" id="chk-no-repeat-wonder" checked> Não repetir maravilha do mesmo jogador hoje'+
+      '</label>';
     document.getElementById("btn-shuffle-seats").addEventListener("click", shuffleSeats);
     document.getElementById("btn-shuffle-wonders").addEventListener("click", shuffleWonders);
     document.getElementById("btn-shuffle-both").addEventListener("click", function(){ shuffleSeats(); shuffleWonders(); });
   }
   renderShuffleToolbar();
+
+  document.querySelectorAll("#expansion-toggles button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var key = b.dataset.exp;
+      activeExpansions[key] = !activeExpansions[key];
+      b.classList.toggle("active", activeExpansions[key]);
+    });
+  });
 
   // ================= LEMBRAR JOGADORES (a partir do histórico compartilhado) =================
   function renderKnownPlayersDatalist(){
@@ -851,8 +930,39 @@
 
   function numval(el){ var v=parseInt(el.value,10); return isNaN(v)?0:v; }
 
-  function computeTotal(e){
-    return e.wonderPts + e.treasury + e.military + e.civil + e.commerce + e.science + e.guild;
+  function computeTotal(e, catsList){
+    var cats = catsList || CATS;
+    return cats.reduce(function(sum,c){ return sum + (e[c.key]||0); }, 0);
+  }
+
+  // ---------------- Desempate oficial e ranking (usado no pódio, resumo e histórico) ----------------
+  // Critério da regra: maior pontuação total; empate é desempatado por moedas no tesouro;
+  // se ainda empatado, a regra não define mais nenhum critério — é vitória (ou posição) compartilhada.
+  function comparePlayers(a,b){
+    if((b.total||0)!==(a.total||0)) return (b.total||0)-(a.total||0);
+    return (b.coins||0)-(a.coins||0);
+  }
+  // Retorna [{player, rank}] ordenado; jogadores com total E moedas idênticos dividem o mesmo rank
+  // (ranking "por posição": 1,2,2,4 — nunca duas pessoas em posições diferentes com o mesmo rank).
+  function rankPlayers(players){
+    var sorted = players.slice().sort(comparePlayers);
+    var ranks = [];
+    var pos = 0;
+    sorted.forEach(function(p,i){
+      if(i===0 || comparePlayers(p, sorted[i-1])!==0) pos = i+1;
+      ranks.push({player:p, rank:pos});
+    });
+    return ranks;
+  }
+  function determineWinners(entries){
+    var maxTotal = Math.max.apply(null, entries.map(function(e){return e.total||0;}));
+    var tied = entries.filter(function(e){return (e.total||0)===maxTotal;});
+    if(tied.length>1){
+      var maxCoins = Math.max.apply(null, tied.map(function(e){return e.coins||0;}));
+      entries.forEach(function(e){ e.isWinner = ((e.total||0)===maxTotal && (e.coins||0)===maxCoins); });
+    } else {
+      entries.forEach(function(e){ e.isWinner = ((e.total||0)===maxTotal); });
+    }
   }
 
   // ================= WIZARD (pontuação por etapa, seguindo a caderneta oficial) =================
@@ -860,14 +970,20 @@
 
   function startWizard(){
     var players = getPlayersFromSetup();
+    var expansions = {leaders: !!activeExpansions.leaders, cities: !!activeExpansions.cities};
+    var cats = CATS.concat(EXPANSION_CATS.filter(function(ec){ return expansions[ec.expansion]; }));
     wizard = {
       stepIndex: 0,
+      cats: cats,
+      expansions: expansions,
       entries: players.map(function(p){
-        return {
+        var e = {
           name:p.name, wonder:p.wonder, side:p.side,
           military:0, coins:0, treasury:0, civil:0, commerce:0, guild:0, wonderPts:0,
           sciC:0, sciT:0, sciG:0, sciW:0, science:0
         };
+        EXPANSION_CATS.forEach(function(ec){ if(expansions[ec.expansion]) e[ec.key]=0; });
+        return e;
       })
     };
     document.getElementById("wizard-card").style.display="block";
@@ -879,10 +995,11 @@
   function renderWizardProgress(){
     var wrap = document.getElementById("wizard-progress");
     wrap.innerHTML="";
-    var total = CATS.length+1;
+    var cats = wizard.cats;
+    var total = cats.length+1;
     for(var i=0;i<total;i++){
       var dot = document.createElement("div");
-      var color = i<CATS.length ? "var(--"+CATS[i].cls+")" : "var(--accent)";
+      var color = i<cats.length ? "var(--"+cats[i].cls+")" : "var(--accent)";
       dot.className = "wizard-dot"+(i<=wizard.stepIndex?" done":"")+(i===wizard.stepIndex?" current":"");
       if(i<=wizard.stepIndex) dot.style.background = color;
       wrap.appendChild(dot);
@@ -894,10 +1011,11 @@
     var body = document.getElementById("wizard-body");
     var backBtn = document.getElementById("btn-wizard-back");
     var nextBtn = document.getElementById("btn-wizard-next");
-    var totalSteps = CATS.length+1;
+    var cats = wizard.cats;
+    var totalSteps = cats.length+1;
 
-    if(wizard.stepIndex < CATS.length){
-      var cat = CATS[wizard.stepIndex];
+    if(wizard.stepIndex < cats.length){
+      var cat = cats[wizard.stepIndex];
       var color = "var(--"+cat.cls+")";
       var html = '<div class="wizard-step-head">'+
         '<div class="wizard-step-badge" style="--step-color:'+color+';">'+(wizard.stepIndex+1)+'</div>'+
@@ -937,7 +1055,7 @@
       body.innerHTML = html;
       wireStepInputs(cat);
       backBtn.disabled = false;
-      nextBtn.textContent = (wizard.stepIndex===CATS.length-1) ? "Ver resumo" : "Avançar";
+      nextBtn.textContent = (wizard.stepIndex===cats.length-1) ? "Ver resumo" : "Avançar";
     } else {
       body.innerHTML = renderSummaryStep();
       markScrollHints(body);
@@ -999,21 +1117,22 @@
   }
 
   function renderSummaryStep(){
-    wizard.entries.forEach(function(e){ e.total = computeTotal(e); });
-    var maxTotal = Math.max.apply(null, wizard.entries.map(function(e){return e.total;}));
+    var cats = wizard.cats;
+    wizard.entries.forEach(function(e){ e.total = computeTotal(e, cats); });
+    determineWinners(wizard.entries);
     var html = '<div class="wizard-step-head">'+
       '<div class="wizard-step-badge" style="--step-color:var(--accent);">✓</div>'+
-      '<h2 class="wizard-step-title"><span class="of">Etapa '+(CATS.length+1)+' de '+(CATS.length+1)+'</span>Resumo</h2>'+
+      '<h2 class="wizard-step-title"><span class="of">Etapa '+(cats.length+1)+' de '+(cats.length+1)+'</span>Resumo</h2>'+
     '</div>';
     html += '<p class="wizard-rule">Confira os pontos de cada seção antes de salvar. Toque em "Voltar" para corrigir alguma etapa.</p>';
     html += '<div class="ledger-wrap"><table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
       '<th class="pts-head">PTS</th>'+
-      CATS.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
+      cats.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
       '</tr></thead><tbody>';
-    wizard.entries.slice().sort(function(a,b){return b.total-a.total;}).forEach(function(e){
-      html += '<tr><td class="name-cell">'+esc(e.name)+(e.total===maxTotal?" 🏆":"")+'<div class="hint">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></td>'+
+    wizard.entries.slice().sort(comparePlayers).forEach(function(e){
+      html += '<tr><td class="name-cell">'+esc(e.name)+(e.isWinner?" 🏆":"")+'<div class="hint">'+e.wonder+' · '+(e.side==="dia"?"Dia":"Noite")+'</div></td>'+
         '<td class="total-cell">'+e.total+'</td>'+
-        CATS.map(function(c){return '<td>'+e[c.key]+'</td>';}).join("")+
+        cats.map(function(c){return '<td>'+e[c.key]+'</td>';}).join("")+
         '</tr>';
     });
     html += '</tbody></table></div>';
@@ -1034,7 +1153,7 @@
 
   document.getElementById("btn-wizard-next").addEventListener("click", function(){
     if(!wizard) return;
-    if(wizard.stepIndex < CATS.length){
+    if(wizard.stepIndex < wizard.cats.length){
       wizard.stepIndex++;
       renderWizardStep();
       document.getElementById("wizard-card").scrollIntoView({behavior:"smooth", block:"start"});
@@ -1044,25 +1163,23 @@
   });
 
   function saveMatchFromWizard(){
+    var cats = wizard.cats;
     var entries = wizard.entries.map(function(e){
-      return {
+      var out = {
         name:e.name, wonder:e.wonder, side:e.side,
         military:e.military, coins:e.coins, treasury:e.treasury,
         civil:e.civil, commerce:e.commerce, guild:e.guild,
-        wonderPts:e.wonderPts, science:e.science, total:computeTotal(e)
+        wonderPts:e.wonderPts, science:e.science
       };
+      EXPANSION_CATS.forEach(function(ec){
+        if(wizard.expansions[ec.expansion]) out[ec.key] = e[ec.key]||0;
+      });
+      out.total = computeTotal(out, cats);
+      return out;
     });
-    var maxTotal = Math.max.apply(null, entries.map(function(e){return e.total;}));
-    var tied = entries.filter(function(e){return e.total===maxTotal;});
-    if(tied.length>1){
-      var maxCoins = Math.max.apply(null, tied.map(function(e){return e.coins;}));
-      tied.forEach(function(e){ e.isWinner = e.coins===maxCoins; });
-      entries.forEach(function(e){ if(e.total!==maxTotal) e.isWinner=false; });
-    } else {
-      entries.forEach(function(e){ e.isWinner = (e.total===maxTotal); });
-    }
+    determineWinners(entries);
 
-    var match = { id:uid(), date: todayISO(), createdAt: Date.now(), numPlayers: entries.length, players: entries };
+    var match = { id:uid(), date: todayISO(), createdAt: Date.now(), numPlayers: entries.length, players: entries, expansions: wizard.expansions };
 
     if(!db){
       alert("O histórico compartilhado ainda não está configurado (firebaseConfig). A partida não foi salva.");
@@ -1078,18 +1195,33 @@
     showPodium(match);
   }
 
+  // Agrupa jogadores com o mesmo rank (total E moedas idênticos = empate oficial da regra) na
+  // mesma posição na tela — nunca duas posições diferentes para quem empatou de verdade, e nunca
+  // a mesma posição para quem só empatou em pontos mas se desempata por moedas.
   function showPodium(match){
     document.getElementById("wizard-card").style.display="none";
-    var sorted = match.players.slice().sort(function(a,b){ return b.total-a.total; });
+    var ranked = rankPlayers(match.players);
+    var groups = [];
+    ranked.forEach(function(r){
+      var last = groups[groups.length-1];
+      if(last && last.rank===r.rank) last.items.push(r.player);
+      else groups.push({rank:r.rank, items:[r.player]});
+    });
     var html = "";
-    sorted.forEach(function(p, idx){
-      html += '<div class="podium-item'+(p.isWinner?" winner":"")+'">'+
-        '<div class="rank">'+(idx+1)+'º</div>'+
+    groups.forEach(function(g){
+      var isWinnerGroup = g.rank===1;
+      var tiedGroup = g.items.length>1;
+      var namesHtml = g.items.map(function(p){ return esc(p.name); }).join(" & ");
+      var subHtml = g.items.map(function(p){
+        return (tiedGroup ? "<strong>"+esc(p.name)+":</strong> " : "") + p.wonder+' · '+(p.side==="dia"?"Dia":"Noite");
+      }).join(tiedGroup ? " &nbsp;·&nbsp; " : "");
+      html += '<div class="podium-item'+(isWinnerGroup?" winner":"")+'">'+
+        '<div class="rank">'+g.rank+'º</div>'+
         '<div style="flex:1;">'+
-          '<div class="podium-name">'+esc(p.name)+(p.isWinner?" 🏆":"")+'</div>'+
-          '<div class="podium-sub">'+p.wonder+' · '+(p.side==="dia"?"Dia":"Noite")+'</div>'+
+          '<div class="podium-name">'+namesHtml+(isWinnerGroup?" 🏆":"")+'</div>'+
+          '<div class="podium-sub">'+subHtml+'</div>'+
         '</div>'+
-        '<div class="podium-total num">'+p.total+'</div>'+
+        '<div class="podium-total num">'+g.items[0].total+'</div>'+
       '</div>';
     });
     document.getElementById("podium-list").innerHTML = html;
@@ -1148,16 +1280,26 @@
     });
   }
 
+  // Categorias a mostrar para esta partida: as 7 base + as expansões que estavam ativas nela.
+  function activeCatsForMatch(m){
+    var cats = CATS.slice();
+    if(m.expansions){
+      EXPANSION_CATS.forEach(function(ec){ if(m.expansions[ec.expansion]) cats.push(ec); });
+    }
+    return cats;
+  }
+
   function buildDetailTable(m){
-    var sorted = m.players.slice().sort(function(a,b){return b.total-a.total;});
+    var cats = activeCatsForMatch(m);
+    var sorted = m.players.slice().sort(comparePlayers);
     var head = '<table class="ledger"><thead><tr><th class="name-cell">Jogador</th>'+
       '<th class="pts-head">PTS</th>'+
-      CATS.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
+      cats.map(function(c){return '<th class="'+c.cls+' cat-icon" title="'+c.label+'">'+c.icon+'</th>';}).join("")+
       '</tr></thead><tbody>';
     var body = sorted.map(function(p){
       return '<tr><td class="name-cell">'+esc(p.name)+(p.isWinner?" 🏆":"")+'<div class="hint">'+p.wonder+' · '+(p.side==="dia"?"Dia":"Noite")+'</div></td>'+
         '<td class="total-cell">'+p.total+'</td>'+
-        CATS.map(function(c){return '<td>'+p[c.key]+'</td>';}).join("")+
+        cats.map(function(c){return '<td>'+(p[c.key]!==undefined?p[c.key]:0)+'</td>';}).join("")+
         '</tr>';
     }).join("");
     return head+body+'</tbody></table>';
@@ -1379,6 +1521,16 @@
       catMax = Math.max(catMax, a);
       return {label:c.label, val:a, cls:c.cls};
     });
+    // Líderes/Cidades só entram na média se alguma partida filtrada realmente usou a expansão —
+    // senão zeros de partidas sem a expansão puxariam a média pra baixo artificialmente.
+    EXPANSION_CATS.forEach(function(ec){
+      var expRows = rows.filter(function(r){ return r.match.expansions && r.match.expansions[ec.expansion]; });
+      if(!expRows.length) return;
+      var vals = expRows.map(function(r){ return r.player[ec.key]!==undefined ? r.player[ec.key] : 0; });
+      var a = avg(vals);
+      catMax = Math.max(catMax, a);
+      catAvgs.push({label:ec.label, val:a, cls:ec.cls});
+    });
     catAvgs.forEach(function(c){
       var pct = catMax>0 ? (c.val/catMax*100) : 0;
       html += barRow(c.label, pct, fmt1(c.val)+" pts", "var(--"+c.cls+")", true);
@@ -1397,6 +1549,22 @@
       html += '<div class="record-row">'+
         '<span class="legend-dot" style="background:var(--'+c.cls+');"></span>'+
         '<span class="cat">'+c.short+'</span>'+
+        '<span class="val">'+maxVal+' pts</span>'+
+        '<span class="who">'+esc(holders.join(", "))+'</span>'+
+      '</div>';
+    });
+    EXPANSION_CATS.forEach(function(ec){
+      var expRows = rows.filter(function(r){ return r.match.expansions && r.match.expansions[ec.expansion]; });
+      if(!expRows.length) return;
+      var maxVal = Math.max.apply(null, expRows.map(function(r){ return r.player[ec.key]!==undefined ? r.player[ec.key] : 0; }));
+      var holders = [];
+      expRows.forEach(function(r){
+        var v = r.player[ec.key]!==undefined ? r.player[ec.key] : 0;
+        if(v===maxVal && holders.indexOf(r.player.name)===-1) holders.push(r.player.name);
+      });
+      html += '<div class="record-row">'+
+        '<span class="legend-dot" style="background:var(--'+ec.cls+');"></span>'+
+        '<span class="cat">'+ec.short+'</span>'+
         '<span class="val">'+maxVal+' pts</span>'+
         '<span class="who">'+esc(holders.join(", "))+'</span>'+
       '</div>';
