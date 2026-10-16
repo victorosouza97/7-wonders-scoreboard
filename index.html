@@ -573,11 +573,15 @@
   // ============================================================================
 
   var WONDERS = ["Gizé","Babilônia","Olímpia","Rodes","Éfeso","Alexandria","Halicarnasso"];
-  // Maravilhas extras que vêm na expansão Cidades (Petra e Bizâncio) — só entram no sorteio
-  // e no seletor de "Maravilha" quando a expansão Cidades está ativada na tela de Nova Partida.
-  var CITY_WONDERS = ["Petra","Bizâncio"];
+  // Maravilhas extras de cada expansão — só entram no sorteio e no seletor de "Maravilha"
+  // quando a respectiva expansão está ativada na tela de Nova Partida.
+  var CITY_WONDERS = ["Petra","Bizâncio"]; // expansão Cidades
+  var LEADER_WONDERS = ["Roma","Abu Simbel"]; // expansão Líderes
   function availableWonders(){
-    return activeExpansions.cities ? WONDERS.concat(CITY_WONDERS) : WONDERS;
+    var pool = WONDERS.slice();
+    if(activeExpansions.cities) pool = pool.concat(CITY_WONDERS);
+    if(activeExpansions.leaders) pool = pool.concat(LEADER_WONDERS);
+    return pool;
   }
   // Ordem e regras conforme a caderneta oficial de pontuação (7 Wonders, 2ª edição)
   var CATS = [
@@ -871,8 +875,8 @@
   }
   renderShuffleToolbar();
 
-  // Com a expansão Cidades, Petra e Bizâncio entram como maravilhas extras — atualiza os
-  // seletores já na tela (sem perder nomes/lado já preenchidos) assim que o toggle muda.
+  // Cada expansão traz maravilhas extras (Cidades: Petra e Bizâncio; Líderes: Roma e Abu Simbel)
+  // — atualiza os seletores já na tela (sem perder nomes/lado já preenchidos) quando o toggle muda.
   function refreshWonderOptions(){
     var pool = availableWonders();
     document.querySelectorAll("#player-rows .p-wonder").forEach(function(sel){
@@ -890,7 +894,7 @@
       var key = b.dataset.exp;
       activeExpansions[key] = !activeExpansions[key];
       b.classList.toggle("active", activeExpansions[key]);
-      if(key==="cities") refreshWonderOptions();
+      refreshWonderOptions();
     });
   });
 
