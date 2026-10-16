@@ -573,6 +573,12 @@
   // ============================================================================
 
   var WONDERS = ["Gizé","Babilônia","Olímpia","Rodes","Éfeso","Alexandria","Halicarnasso"];
+  // Maravilhas extras que vêm na expansão Cidades (Petra e Bizâncio) — só entram no sorteio
+  // e no seletor de "Maravilha" quando a expansão Cidades está ativada na tela de Nova Partida.
+  var CITY_WONDERS = ["Petra","Bizâncio"];
+  function availableWonders(){
+    return activeExpansions.cities ? WONDERS.concat(CITY_WONDERS) : WONDERS;
+  }
   // Ordem e regras conforme a caderneta oficial de pontuação (7 Wonders, 2ª edição)
   var CATS = [
     {key:"wonderPts", label:"Maravilha", short:"Maravilha", icon:"🏛️", cls:"cat-wonder", type:"number",
@@ -602,7 +608,8 @@
   var matches = [];
   var numPlayers = 4;
   var activeExpansions = {leaders:false, cities:false};
-  var statFilters = { players:[], wonders:[], side:"todos", count:"todos", from:"", to:"" };
+  // Período começa preenchido com a data de hoje (sessão do dia); "Limpar filtros" volta pro aberto.
+  var statFilters = { players:[], wonders:[], side:"todos", count:"todos", from:todayISO(), to:"" };
 
   // ---------------- Persistência: histórico compartilhado via Firestore ----------------
   var db = null;
@@ -741,8 +748,9 @@
       });
     });
     wrap.innerHTML="";
+    var wonderPool = availableWonders();
     for(var i=0;i<numPlayers;i++){
-      let data = prevData[i] || {name:"", wonder: WONDERS[i%WONDERS.length], side:"dia"};
+      let data = prevData[i] || {name:"", wonder: wonderPool[i%wonderPool.length], side:"dia"};
       let row = document.createElement("div");
       row.className="player-row";
       row.innerHTML =
@@ -762,7 +770,7 @@
           '</div>'+
         '</div>';
       var sel = row.querySelector(".p-wonder");
-      WONDERS.forEach(function(w){
+      wonderPool.forEach(function(w){
         var opt=document.createElement("option"); opt.value=w; opt.textContent=w;
         if(w===data.wonder) opt.selected=true;
         sel.appendChild(opt);
@@ -815,7 +823,7 @@
   // Backtracking aleatorizado: tenta achar uma atribuição onde ninguém repete maravilha do dia;
   // se for matematicamente impossível (muitas partidas já jogadas), cede e permite repetição.
   function tryAssignWondersAvoidingRepeats(names, usedTodayMap){
-    var pool = shuffleArray(WONDERS);
+    var pool = shuffleArray(availableWonders());
     var count = names.length;
     var assignment = new Array(count).fill(null);
     var takenWonder = {};
@@ -845,7 +853,7 @@
     var chk = document.getElementById("chk-no-repeat-wonder");
     var avoidRepeat = chk ? chk.checked : false;
     var usedToday = avoidRepeat ? wondersUsedTodayByPlayer() : {};
-    var assignment = (avoidRepeat && tryAssignWondersAvoidingRepeats(names, usedToday)) || shuffleArray(WONDERS).slice(0, rows.length);
+    var assignment = (avoidRepeat && tryAssignWondersAvoidingRepeats(names, usedToday)) || shuffleArray(availableWonders()).slice(0, rows.length);
     rows.forEach(function(r,i){ r.querySelector(".p-wonder").value = assignment[i]; });
   }
   function renderShuffleToolbar(){
@@ -863,11 +871,26 @@
   }
   renderShuffleToolbar();
 
+  // Com a expansão Cidades, Petra e Bizâncio entram como maravilhas extras — atualiza os
+  // seletores já na tela (sem perder nomes/lado já preenchidos) assim que o toggle muda.
+  function refreshWonderOptions(){
+    var pool = availableWonders();
+    document.querySelectorAll("#player-rows .p-wonder").forEach(function(sel){
+      var current = sel.value;
+      sel.innerHTML = "";
+      pool.forEach(function(w){
+        var opt=document.createElement("option"); opt.value=w; opt.textContent=w;
+        if(w===current) opt.selected=true;
+        sel.appendChild(opt);
+      });
+    });
+  }
   document.querySelectorAll("#expansion-toggles button").forEach(function(b){
     b.addEventListener("click", function(){
       var key = b.dataset.exp;
       activeExpansions[key] = !activeExpansions[key];
       b.classList.toggle("active", activeExpansions[key]);
+      if(key==="cities") refreshWonderOptions();
     });
   });
 
@@ -963,6 +986,31 @@
     } else {
       entries.forEach(function(e){ e.isWinner = ((e.total||0)===maxTotal); });
     }
+  }
+
+  // "Mãe de leite" e "Carrasco": no draft do 7 Wonders cada jogador passa as cartas restantes
+  // pro MESMO vizinho em duas das três eras (Idade I e III; na Idade II a mão vai pro outro lado).
+  // O app guarda os jogadores na ordem física da mesa (cada linha é um assento, vizinhos = i-1/i+1),
+  // mas não sabe qual lado da mesa é fisicamente "direita" — então fixamos uma convenção: o vizinho
+  // no índice anterior (i-1) é sempre quem passa cartas duas vezes pro jogador do índice i. Se na
+  // prática for o contrário na sua mesa, é só avisar que a gente inverte essa convenção numa linha.
+  // Mãe de leite = esse vizinho relativo ao VENCEDOR; Carrasco = o mesmo relativo ao ÚLTIMO colocado.
+  function computeNurseAndExecutioner(m){
+    var n = m.players.length;
+    if(n<3) return {nurses:[], executioners:[]};
+    var ranked = rankPlayers(m.players);
+    var minRank = ranked[0].rank;
+    var maxRank = ranked[ranked.length-1].rank;
+    var winners = ranked.filter(function(r){return r.rank===minRank;}).map(function(r){return r.player;});
+    var losers = ranked.filter(function(r){return r.rank===maxRank;}).map(function(r){return r.player;});
+    function twicePassedBy(player){
+      var idx = m.players.indexOf(player);
+      return m.players[(idx-1+n)%n].name;
+    }
+    return {
+      nurses: winners.map(twicePassedBy),
+      executioners: losers.map(twicePassedBy)
+    };
   }
 
   // ================= WIZARD (pontuação por etapa, seguindo a caderneta oficial) =================
@@ -1413,7 +1461,7 @@
     }
 
     var distinctMatches = {};
-    rows.forEach(function(r){ distinctMatches[r.match.id]=true; });
+    rows.forEach(function(r){ distinctMatches[r.match.id]=r.match; });
     var matchCount = Object.keys(distinctMatches).length;
 
     var totals = rows.map(function(r){return r.player.total;});
@@ -1449,6 +1497,36 @@
         var w = winsByPlayer[name]||0, p = playedByPlayer[name];
         var pct = Math.round(100*w/p);
         html += barRow(name, pct, pct+"% ("+w+"/"+p+")", "var(--accent)");
+      });
+      html += '</div>';
+    }
+
+    // Mãe de leite / Carrasco — quem mais passou cartas de Idade I e III pro vencedor / pro
+    // último colocado de cada partida (uma por partida distinta do recorte filtrado).
+    var nurseCounts = {}, executionerCounts = {};
+    Object.keys(distinctMatches).forEach(function(id){
+      var m = distinctMatches[id];
+      var r = computeNurseAndExecutioner(m);
+      r.nurses.forEach(function(name){ nurseCounts[name]=(nurseCounts[name]||0)+1; });
+      r.executioners.forEach(function(name){ executionerCounts[name]=(executionerCounts[name]||0)+1; });
+    });
+    var nurseNames = Object.keys(nurseCounts);
+    if(nurseNames.length){
+      html += '<div class="card"><h3>🍼 Mãe de leite</h3><p class="hint" style="margin:-4px 0 10px;">Quem mais passou cartas de Idade I e III pro vencedor da partida.</p>';
+      var maxNurse = Math.max.apply(null, nurseNames.map(function(n){return nurseCounts[n];}));
+      nurseNames.sort(function(a,b){return nurseCounts[b]-nurseCounts[a];}).forEach(function(name){
+        var c = nurseCounts[name];
+        html += barRow(name, maxNurse>0?(c/maxNurse*100):0, c+"x", "var(--good)");
+      });
+      html += '</div>';
+    }
+    var executionerNames = Object.keys(executionerCounts);
+    if(executionerNames.length){
+      html += '<div class="card"><h3>🪓 Carrasco</h3><p class="hint" style="margin:-4px 0 10px;">Quem mais passou cartas de Idade I e III pro último colocado da partida.</p>';
+      var maxExec = Math.max.apply(null, executionerNames.map(function(n){return executionerCounts[n];}));
+      executionerNames.sort(function(a,b){return executionerCounts[b]-executionerCounts[a];}).forEach(function(name){
+        var c = executionerCounts[name];
+        html += barRow(name, maxExec>0?(c/maxExec*100):0, c+"x", "var(--bad)");
       });
       html += '</div>';
     }
